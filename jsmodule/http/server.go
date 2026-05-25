@@ -70,8 +70,8 @@ func (s *Server) constructor(call sobek.ConstructorCall, rt *sobek.Runtime) *sob
 	switch {
 	case types.IsNumber(opt):
 		port := opt.ToInteger()
-		if port <= 0 {
-			panic(rt.NewTypeError("port must be a positive number"))
+		if port < 0 {
+			panic(rt.NewTypeError("port must be a non-negative number"))
 		}
 		serv.port = int(port)
 		serv.server.Addr = fmt.Sprintf(":%d", serv.port)
@@ -283,6 +283,12 @@ func (s *httpServer) listen() net.Listener {
 	ln, err := net.Listen("tcp", s.server.Addr)
 	if err != nil {
 		js.Throw(s.rt, err)
+	}
+	if ta, ok := ln.Addr().(*net.TCPAddr); ok {
+		s.port = ta.Port
+		if ip := ta.IP; ip != nil && !ip.IsUnspecified() {
+			s.hostname = ip.String()
+		}
 	}
 	return ln
 }

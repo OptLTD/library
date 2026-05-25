@@ -31,13 +31,16 @@ func testCtx(t *testing.T, timeout time.Duration) (context.Context, context.Canc
 	return context.WithTimeout(context.Background(), timeout)
 }
 
+// randomPort avoids fixed-port collisions when subtests run back-to-back in CI.
+const randomPort = `{ port: 0, handler:`
+
 func TestHttpServer(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		vm := newTestVM(t)
 		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
-		const s = serve((req) => new Response("ok"));
+		const s = serve(`+randomPort+` (req) => new Response("ok") });
 		const res = await fetch(s.url);
 		assert.equal(await res.text(), "ok");
 		await s.shutdown();
@@ -50,7 +53,7 @@ func TestHttpServer(t *testing.T) {
 		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
-		const s = serve(3000, (req) => new Response("ok"));
+		const s = serve(0, (req) => new Response("ok"));
 		const res = await fetch(s.url);
 		assert.equal(await res.text(), "ok");
 		await s.shutdown();
@@ -64,7 +67,7 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
-			port: 3000,
+			port: 0,
 			hostname: "localhost",
 			handler: (req) => new Response("ok")
 		});
@@ -81,6 +84,7 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
+			port: 0,
 			handler: (req) => { throw new Error("test error"); },
 			onError: (err) => {
 				assert.contains("test error", err.message);
@@ -101,6 +105,7 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
+			port: 0,
 			handler: (req) => { throw new Error("test error") },
 			onError: (err) => { throw new Error("onError error") }
 		});
@@ -118,6 +123,7 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
+			port: 0,
 			handler: (req) => "ciallo",
 			onError: (err) => "ciallo"
 		});
@@ -134,9 +140,7 @@ func TestHttpServer(t *testing.T) {
 		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
-		const s = serve({
-			handler: (req) => "ciallo",
-		});
+		const s = serve(`+randomPort+` (req) => "ciallo" });
 		const res = await fetch(s.url);
 		assert.equal(res.status, 500);
 		assert.contains("Internal Server Error", await res.text());
@@ -150,14 +154,14 @@ func TestHttpServer(t *testing.T) {
 		ctx, cancel := testCtx(t, 10*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
-		const s = serve(async (req) => {
+		const s = serve(`+randomPort+` async (req) => {
 			assert.equal(req.method, "POST");
 			assert.equal(req.url, "/");
 			await new Promise((r) => { setTimeout(r, 100) });
 			assert.equal(await req.text(), "test");
 			await new Promise((r) => { setTimeout(r, 100) });
 			return Response.json({ foo: "bar" });
-		});
+		} });
 		const res = await fetch(s.url, {
 			method: "POST",
 			body: new Blob(["test"])
@@ -175,9 +179,7 @@ func TestHttpServer(t *testing.T) {
 		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
-		const s = serve({
-			handler: (req) => new Response("ok")
-		});
+		const s = serve(`+randomPort+` (req) => new Response("ok") });
 		assert.equal(s.listening, true);
 		await s.shutdown();
 		assert.equal(s.listening, false);
@@ -192,6 +194,7 @@ func TestHttpServer(t *testing.T) {
 		_, err := vm.RunModule(ctx, `
 		const controller = new AbortController();
 		const s = serve({
+			port: 0,
 			signal: controller.signal,
 			handler: (req) => new Response("ok")
 		});
@@ -210,6 +213,7 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
+			port: 8000,
 			onListen: ({ hostname, port }) => {
 				assert.equal(hostname, "127.0.0.1");
 				assert.equal(port, 8000);
@@ -227,8 +231,8 @@ func TestHttpServer(t *testing.T) {
 		defer cancel()
 
 		_, err := vm.RunModule(ctx, `
-		const s1 = serve(8001, (req) => Response.json({ msg: "ok" }));
-		const s2 = serve(async (req) => {
+		const s1 = serve(0, (req) => Response.json({ msg: "ok" }));
+		const s2 = serve(0, async (req) => {
 			const res = await fetch(s1.url);
 			const json = await res.json();
 			assert.equal(json, { msg: "ok" });
@@ -282,7 +286,7 @@ func TestHttpServer(t *testing.T) {
 		})
 
 		_, err := vm.RunModule(ctx, `
-		const s = serve(() => Response.json({ msg: "ok" }));
+		const s = serve(`+randomPort+` () => Response.json({ msg: "ok" }) });
 		const take = await concurrent(s.url);
 		console.log("`+strconv.Itoa(goroutines)+` request", take);
 		s.close();
