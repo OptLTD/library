@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/OptLTD/library/formula v0.0.0
-	github.com/OptLTD/library/jsmodule v0.1.3
-	github.com/OptLTD/library/jsrunner v0.1.3
+	github.com/OptLTD/library/jsmodule v1.0.0
+	github.com/OptLTD/library/jsrunner v1.0.0
 	github.com/OptLTD/library/search v0.0.0
 )
 
