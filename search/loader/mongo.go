@@ -1,0 +1,217 @@
+package loader
+
+import (
+	"context"
+	"encoding/json"
+	"log"
+	"search/consts"
+	"search/source"
+	"search/support"
+	"strings"
+	"time"
+
+	"github.com/duke-git/lancet/v2/maputil"
+	"github.com/duke-git/lancet/v2/slice"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+type MongoLoader struct {
+	client *mongo.Database
+	tables *SchemaTableName
+}
+
+func (self *MongoLoader) Init() error {
+	value, ok := support.GetValue(consts.DATABASE_MONGO)
+	if !ok || !support.Bool(value) {
+		return support.ErrorConfigClient
+	}
+	self.client = value.(*mongo.Database)
+
+	tables, ok := support.GetValue(consts.DB_TABLE_NAMES)
+	if !ok || !support.Bool(tables) {
+		return support.ErrorConfigTables
+	}
+
+	self.tables = tables.(*SchemaTableName)
+	if self.tables.Model == "" || self.tables.Table == "" {
+		return support.ErrorConfigTables
+	}
+	return nil
+}
+
+func (self *MongoLoader) Load(ctx context.Context, model string) (*source.Value, error) {
+	logID := GetLogID(ctx)
+	if err := self.Init(); err != nil {
+		support.LogError(logID, "Load Error", err)
+		return nil, err
+	}
+	where1 := map[string]any{"uukey": model}
+	where2 := map[string]any{"model": model}
+	if scope := GetScope(ctx); scope != nil {
+		where1 = maputil.Merge(where1, scope)
+		where2 = maputil.Merge(where2, scope)
+	}
+	tModel := time.Now()
+	detail, err := self.getModel(ctx, where1)
+	support.LogWatchCostMs(tModel, logID, "Engine Stage",
+		"stage", "schema_loader_biz_model", "model", model,
+	)
+	if err != nil {
+		return nil, support.ErrorModelSource
+	}
+
+	clicks := map[string]source.Click{}
+	for _, action := range detail.Clicks {
+		clicks[action.UUKey] = action
+	}
+	groups := map[string]source.Group{}
+	for _, group := range detail.Groups {
+		group.GType = strings.ToUpper(group.GType)
+		groups[group.UUKey] = group
+	}
+	// reset default group, seqno to 0
+	groups["basic"] = ResetDefaultGroup(groups)
+	fields := map[string]source.Field{}
+	for _, item := range detail.Fields {
+		group, _ := groups[item.Group]
+		item.GName = group.Title
+		item.GType = group.GType
+		item.UUKey = item.GetKey()
+		item.SeqNo = item.SeqNo + group.SeqNo*1000
+		switch strings.ToUpper(group.GType) {
+		case consts.GTYPE_FLATTEN:
+			item.Index = item.Field
+		case consts.GTYPE_GROUPED:
+			item.Index = item.UUKey
+		}
+		fields[item.UUKey] = item
+	}
+
+	tTbl := time.Now()
+	tables, _ := self.getTables(ctx, where2)
+	support.LogWatchCostMs(tTbl, logID, "Engine Stage",
+		"stage", "schema_loader_biz_tables", "model", model,
+	)
+	tInp := time.Now()
+	inputs, _ := self.getInputs(ctx, where2)
+	support.LogWatchCostMs(tInp, logID, "Engine Stage",
+		"stage", "schema_loader_biz_inputs", "model", model,
+	)
+
+	support.LogDebugf(logID, "Load %s Success", model)
+	if keys := maputil.Keys(inputs); len(keys) > 0 {
+		support.LogDebugf(logID, "Load %s inputs: %s", model, keys)
+	}
+	if keys := maputil.Keys(tables); len(keys) > 0 {
+		support.LogDebugf(logID, "Load %s tables: %s", model, keys)
+	}
+
+	return &source.Value{
+		Model: *detail, Fields: fields, Groups: groups,
+		Tables: tables, Inputs: inputs, Clicks: clicks,
+	}, nil
+}
+
+func (self *MongoLoader) toBson(where map[string]any) bson.D {
+	filter := bson.D{}
+	for key, val := range where {
+		switch support.GetType(val) {
+		case "array":
+			child := bson.D{{Key: "$in", Value: val}}
+			where := bson.E{Key: key, Value: child}
+			filter = append(filter, where)
+		case "bool":
+			value := []any{val, support.If(val, 1, 0)}
+			child := bson.D{{Key: "$in", Value: value}}
+			where := bson.E{Key: key, Value: child}
+			filter = append(filter, where)
+		default:
+			filter = append(filter, bson.E{Key: key, Value: val})
+		}
+	}
+	return filter
+}
+
+func (self *MongoLoader) getModel(ctx context.Context, where map[string]any) (*source.Model, error) {
+	logID := GetLogID(ctx)
+	result := &source.Model{}
+	collect := self.client.Collection(self.tables.Model)
+	find := collect.FindOne(ctx, self.toBson(where))
+	if err := find.Decode(&result); err != nil {
+		support.LogError(logID, "Get Model Error", err)
+		return nil, err
+	}
+
+	// reset index
+	slice.ForEach(result.Groups, func(idx int, item source.Group) {
+		result.Groups[idx].SeqNo = support.Or(item.SeqNo, uint16(idx+1))
+	})
+	slice.ForEach(result.Fields, func(idx int, item source.Field) {
+		result.Fields[idx].UUKey = item.GetKey()
+		result.Fields[idx].SeqNo = support.Or(
+			item.SeqNo, uint16(idx+1),
+		)
+	})
+	// rename driver
+	result.Driver = strings.ToUpper(result.Driver)
+	return result, nil
+}
+
+func (self *MongoLoader) getTables(ctx context.Context, where map[string]any) (map[string]source.Table, error) {
+	logID := GetLogID(ctx)
+	result, collect := []source.Table{}, self.client.Collection(self.tables.Table)
+	if cursor, err := collect.Find(ctx, self.toBson(where)); err != nil {
+		support.LogError(logID, "Get Tables Error", err)
+		return nil, err
+	} else if err := cursor.All(context.TODO(), &result); err != nil {
+		support.LogError(logID, "Get Tables Error", err)
+		return nil, err
+	} else if len(result) == 0 {
+		result = append(result, source.Table{
+			Title: "default", UUKey: "default",
+		})
+	}
+
+	final := map[string]source.Table{}
+	for _, table := range result {
+		if len(table.Query) == 0 {
+			final[table.UUKey] = table
+			continue
+		}
+		// fix query json of bson
+		// private.M to map[string]any
+		var query = map[string]any{}
+		if data, err := json.Marshal(table.Query); err != nil {
+			log.Println("what happend", err)
+		} else if json.Unmarshal(data, &query) != nil {
+			log.Println("what happend", err)
+		} else if len(query) > 0 {
+			table.Query = query
+		}
+		final[table.UUKey] = table
+	}
+
+	// key by uukey
+	return final, nil
+}
+
+func (self *MongoLoader) getInputs(ctx context.Context, where map[string]any) (map[string]source.Input, error) {
+	logID := GetLogID(ctx)
+	collect := self.client.Collection(self.tables.Input)
+	result, collect := []source.Input{}, self.client.Collection(self.tables.Input)
+	if cursor, err := collect.Find(ctx, self.toBson(where)); err != nil {
+		support.LogError(logID, "Get Inputs Error", err)
+		return nil, err
+	} else if err := cursor.All(context.TODO(), &result); err != nil {
+		support.LogError(logID, "Get Inputs Error", err)
+		return nil, err
+	} else if len(result) == 0 {
+		result = append(result, source.Input{
+			Title: "default", UUKey: "default",
+		})
+	}
+	return slice.KeyBy(result, func(item source.Input) string {
+		return item.UUKey
+	}), nil
+}

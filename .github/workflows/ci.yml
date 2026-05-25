@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            search/go.sum
+            formula/go.sum
+            jsrunner/go.sum
+            jsmodule/go.sum
+
+      - name: Sync workspace
+        run: go work sync
+
+      - name: Test modules
+        run: |
+          set -euo pipefail
+          for mod in search formula jsrunner jsmodule; do
+            echo "testing $mod"
+            (cd "$mod" && go test ./...)
+          done

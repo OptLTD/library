@@ -1,0 +1,149 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver tag, e.g. v0.1.0
+        required: true
+        type: string
+      modules:
+        description: Comma-separated modules (empty = all)
+        required: false
+        default: search,formula,jsrunner,jsmodule
+        type: string
+      skip_tests:
+        description: Skip go test
+        required: false
+        default: false
+        type: boolean
+  push:
+    tags:
+      - release/v*
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  MODULE_PREFIX: github.com/OptLTD/library
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            search/go.sum
+            formula/go.sum
+            jsrunner/go.sum
+            jsmodule/go.sum
+
+      - name: Resolve release version
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            version="${GITHUB_REF_NAME#release/}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          version="$(printf '%s' "$version" | tr '[:upper:]' '[:lower:]')"
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "invalid version: $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Sync workspace
+        run: go work sync
+
+      - name: Validate and test
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          MODULES: ${{ github.event_name == 'workflow_dispatch' && inputs.modules || 'search,formula,jsrunner,jsmodule' }}
+          SKIP_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_tests || 'false' }}
+        run: |
+          set -euo pipefail
+
+          mods=()
+          IFS=',' read -ra parts <<< "$MODULES"
+          for mod in "${parts[@]}"; do
+            mod="$(printf '%s' "$mod" | xargs)"
+            [[ -z "$mod" ]] && continue
+            [[ -f "$mod/go.mod" ]] || { echo "unknown module: $mod" >&2; exit 1; }
+            mods+=("$mod")
+          done
+          [[ ${#mods[@]} -gt 0 ]] || { echo "no modules selected" >&2; exit 1; }
+
+          for mod in "${mods[@]}"; do
+            expected="${MODULE_PREFIX}/${mod}"
+            if ! grep -qE "^module ${expected}$" "$mod/go.mod"; then
+              echo "$mod/go.mod: expected module path $expected" >&2
+              exit 1
+            fi
+            if grep -qE '^replace ' "$mod/go.mod"; then
+              echo "$mod/go.mod: replace directives must be removed before publishing" >&2
+              exit 1
+            fi
+          done
+
+          if [[ "$SKIP_TESTS" != "true" ]]; then
+            for mod in "${mods[@]}"; do
+              echo "testing $mod"
+              (cd "$mod" && go test ./...)
+            done
+          fi
+
+          for mod in "${mods[@]}"; do
+            tag="${mod}/${VERSION}"
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "tag already exists: $tag" >&2
+              exit 1
+            fi
+            echo "will release $tag"
+          done
+
+          printf '%s\n' "${mods[@]}" > /tmp/release-modules.txt
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tags
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r mod; do
+            tag="${mod}/${VERSION}"
+            git tag -a "$tag" -m "Release ${MODULE_PREFIX}/${mod} ${VERSION}"
+            git push origin "$tag"
+          done < /tmp/release-modules.txt
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          {
+            echo "## Release ${VERSION}"
+            echo
+            echo "Go modules are available via:"
+            echo
+            echo '```bash'
+            while IFS= read -r mod; do
+              echo "go get ${MODULE_PREFIX}/${mod}@${VERSION}"
+            done < /tmp/release-modules.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
