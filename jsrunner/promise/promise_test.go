@@ -1,29 +1,41 @@
 package promise
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	js "jsrunner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPromise(t *testing.T) {
-	t.Parallel()
+func testVM(t *testing.T) (js.VM, *sobek.Runtime, context.Context, context.CancelFunc) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	vm := js.NewVM()
+	return vm, vm.Runtime(), ctx, cancel
+}
 
+// flushVM lets the event loop run jobs enqueued by promise.New goroutines.
+func flushVM(ctx context.Context, vm js.VM) error {
+	return vm.Run(ctx, func() error { return nil })
+}
+
+func TestPromise(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
-		rt := vm.Runtime()
-
 		t.Run("resolve", func(t *testing.T) {
+			vm, rt, ctx, cancel := testVM(t)
+			defer cancel()
+
 			var v sobek.Value
-			err := vm.Run(t.Context(), func() error {
+			err := vm.Run(ctx, func() error {
 				v = New(rt, func(callback Callback) {
 					callback(func() (any, error) {
 						return "resolve", nil
@@ -32,14 +44,19 @@ func TestPromise(t *testing.T) {
 				return nil
 			})
 			require.NoError(t, err)
+			require.NoError(t, flushVM(ctx, vm))
+
 			result, err := Result(v)
 			require.NoError(t, err)
 			assert.Equal(t, "resolve", result)
 		})
 
 		t.Run("reject", func(t *testing.T) {
+			vm, rt, ctx, cancel := testVM(t)
+			defer cancel()
+
 			var v sobek.Value
-			err := vm.Run(t.Context(), func() error {
+			err := vm.Run(ctx, func() error {
 				v = New(rt, func(callback Callback) {
 					callback(func() (any, error) {
 						return nil, errors.New("reject")
@@ -48,29 +65,39 @@ func TestPromise(t *testing.T) {
 				return nil
 			})
 			require.NoError(t, err)
+			require.NoError(t, flushVM(ctx, vm))
+
 			_, err = Result(v)
 			assert.ErrorContains(t, err, "reject")
 		})
 
 		t.Run("panic on async", func(t *testing.T) {
+			vm, rt, ctx, cancel := testVM(t)
+			defer cancel()
+
 			assert.NotPanics(t, func() {
 				var v sobek.Value
-				err := vm.Run(t.Context(), func() error {
+				err := vm.Run(ctx, func() error {
 					v = New(rt, func(callback Callback) {
 						panic("reject")
 					})
 					return nil
 				})
 				require.NoError(t, err)
+				require.NoError(t, flushVM(ctx, vm))
+
 				_, err = Result(v)
 				assert.ErrorContains(t, err, "reject")
 			})
 		})
 
 		t.Run("panic on callback", func(t *testing.T) {
+			vm, rt, ctx, cancel := testVM(t)
+			defer cancel()
+
 			assert.NotPanics(t, func() {
 				var v sobek.Value
-				err := vm.Run(t.Context(), func() error {
+				err := vm.Run(ctx, func() error {
 					v = New(rt, func(callback Callback) {
 						callback(func() (any, error) {
 							panic("reject")
@@ -79,11 +106,12 @@ func TestPromise(t *testing.T) {
 					return nil
 				})
 				require.NoError(t, err)
+				require.NoError(t, flushVM(ctx, vm))
+
 				_, err = Result(v)
 				assert.ErrorContains(t, err, "reject")
 			})
 		})
-
 	})
 
 	t.Run("example", func(t *testing.T) {
@@ -111,18 +139,19 @@ func TestPromise(t *testing.T) {
 			})
 		}
 
-		var (
-			value sobek.Value
-			err   error
-		)
-		err = vm.Run(t.Context(), func() error {
+		vm, _, ctx, cancel := testVM(t)
+		defer cancel()
+
+		var value sobek.Value
+		err := vm.Run(ctx, func() error {
 			_ = vm.Runtime().Set("fetch", fetch)
-			value, err = vm.Runtime().RunString(fmt.Sprintf(`fetch("%s")`, server.URL))
-			return err
+			var runErr error
+			value, runErr = vm.Runtime().RunString(fmt.Sprintf(`fetch("%s")`, server.URL))
+			return runErr
 		})
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
+		require.NoError(t, flushVM(ctx, vm))
+
 		v, err := Result(value)
 		require.NoError(t, err)
 		assert.Equal(t, result, v)

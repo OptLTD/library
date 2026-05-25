@@ -209,8 +209,11 @@ func (s *Server) url(call sobek.FunctionCall, rt *sobek.Runtime) sobek.Value {
 func (s *Server) finished(call sobek.FunctionCall, rt *sobek.Runtime) sobek.Value {
 	this := toHttpServer(rt, call.This)
 	return promise.New(rt, func(callback promise.Callback) {
-		<-this.ctx.Done()
-		callback(func() (any, error) { return nil, nil })
+		go func() {
+			<-this.ctx.Done()
+			_ = this.shutdown()
+			callback(func() (any, error) { return nil, nil })
+		}()
 	})
 }
 
@@ -294,6 +297,9 @@ func (s *httpServer) close() error {
 }
 
 func (s *httpServer) shutdown() error {
+	if s.closed.Load() {
+		return nil
+	}
 	s.closed.Store(true)
 	err := s.server.Shutdown(s.ctx)
 	if s.ref != nil {

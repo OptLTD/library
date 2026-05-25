@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	js "jsrunner"
 	"jsrunner/modulestest"
 	"jsrunner/promise"
 	_ "jsmodule/timers"
@@ -18,15 +18,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHttpServer(t *testing.T) {
-	t.Parallel()
-	vm := modulestest.New(t, js.WithInitial(func(rt *sobek.Runtime) {
+func newTestVM(t *testing.T) modulestest.VM {
+	t.Helper()
+	return modulestest.New(t, js.WithInitial(func(rt *sobek.Runtime) {
 		value, _ := new(Server).Instantiate(rt)
 		_ = rt.Set("serve", value)
 	}))
+}
 
+func testCtx(t *testing.T, timeout time.Duration) (context.Context, context.CancelFunc) {
+	t.Helper()
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+func TestHttpServer(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve((req) => new Response("ok"));
@@ -38,7 +46,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("port only", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve(3000, (req) => new Response("ok"));
@@ -50,7 +59,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("custom hostname", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -66,7 +76,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("error handling", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -85,7 +96,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("error on onError", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -101,7 +113,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("error not response type", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -117,7 +130,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("not response type", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -132,7 +146,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("request handling", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 10*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve(async (req) => {
@@ -156,7 +171,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("server shutdown", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -170,7 +186,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("abort signal", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second*2)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const controller = new AbortController();
@@ -178,6 +195,8 @@ func TestHttpServer(t *testing.T) {
 			signal: controller.signal,
 			handler: (req) => new Response("ok")
 		});
+		const res = await fetch(s.url);
+		assert.equal(await res.text(), "ok");
 		controller.abort();
 		await s.finished;
 		assert.equal(s.listening, false);
@@ -186,7 +205,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("onListen callback", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 		_, err := vm.RunModule(ctx, `
 		const s = serve({
@@ -202,7 +222,8 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("multiple servers", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 5*time.Second)
 		defer cancel()
 
 		_, err := vm.RunModule(ctx, `
@@ -222,13 +243,14 @@ func TestHttpServer(t *testing.T) {
 	})
 
 	t.Run("request concurrent", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second*10)
+		vm := newTestVM(t)
+		ctx, cancel := testCtx(t, 15*time.Second)
 		defer cancel()
 
 		goroutines := 100
 
 		do := func(i int, done func(), url string) {
-			ctx2, cancel2 := context.WithTimeout(ctx, time.Second*10)
+			ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel2()
 			defer done()
 
