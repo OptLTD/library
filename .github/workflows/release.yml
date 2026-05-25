@@ -101,6 +101,20 @@ jobs:
       - name: Sync workspace
         run: go work sync
 
+      - name: Prepare publishable go.mod
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          ver="${VERSION#v}"
+          (cd jsrunner && \
+            go mod edit -dropreplace=github.com/OptLTD/library/jsmodule && \
+            go mod edit -require=github.com/OptLTD/library/jsmodule@"v${ver}")
+          (cd jsmodule && \
+            go mod edit -dropreplace=github.com/OptLTD/library/jsrunner && \
+            go mod edit -require=github.com/OptLTD/library/jsrunner@"v${ver}")
+          go work sync
+
       - name: Validate modules
         env:
           VERSION: ${{ steps.meta.outputs.version }}
@@ -151,6 +165,10 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
+          git add jsrunner/go.mod jsmodule/go.sum jsrunner/go.sum jsmodule/go.mod 2>/dev/null || true
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(release): prepare jsrunner/jsmodule go.mod for ${VERSION}"
+          fi
           while IFS= read -r mod; do
             tag="${mod}/${VERSION}"
             git tag -a "$tag" -m "Release ${MODULE_PREFIX}/${mod} ${VERSION}"

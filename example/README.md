@@ -19,6 +19,4 @@ example/
     └── jsmodule.go
 ```
 
-## 致谢
 
-本仓库中的 `jsrunner` 与 `jsmodule` 源自 [shiroyk/ski](https://github.com/shiroyk/ski)（基于 Goja 的 JavaScript 运行时，含 Buffer、fetch、timers 等内置模块）。感谢原作者 [shiroyk](https://github.com/shiroyk) 的开源贡献。
