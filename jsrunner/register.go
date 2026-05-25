@@ -1,6 +1,6 @@
 package js
 
-import "jsmodule"
+import "github.com/OptLTD/library/jsmodule"
 
 const superuserModulePrefix = "superuser/"
 

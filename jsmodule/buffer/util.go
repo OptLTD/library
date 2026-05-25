@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/grafana/sobek"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // GetReader extracts the underlying Reader and type from a Blob or File.

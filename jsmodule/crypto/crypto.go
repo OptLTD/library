@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 
 	"github.com/grafana/sobek"
-	"jsmodule"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 func init() {

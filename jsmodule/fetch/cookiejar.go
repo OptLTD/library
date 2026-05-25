@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	"github.com/OptLTD/library/jsrunner"
 )
 
 // CookieJarModule manages storage and use of cookies in HTTP requests.

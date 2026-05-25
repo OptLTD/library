@@ -12,7 +12,7 @@ import (
 	"hash"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	"github.com/OptLTD/library/jsrunner"
 	"golang.org/x/crypto/ripemd160"
 )
 

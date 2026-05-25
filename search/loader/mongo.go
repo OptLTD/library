@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"search/consts"
-	"search/source"
-	"search/support"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/source"
+	"github.com/OptLTD/library/search/support"
 	"strings"
 	"time"
 

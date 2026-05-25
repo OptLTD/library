@@ -1,8 +1,8 @@
 package respond
 
 import (
-	"search/request"
-	"search/support"
+	"github.com/OptLTD/library/search/request"
+	"github.com/OptLTD/library/search/support"
 	"slices"
 	"strings"
 )

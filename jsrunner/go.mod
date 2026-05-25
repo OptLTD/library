@@ -1,8 +1,9 @@
-module jsrunner
+module github.com/OptLTD/library/jsrunner
 
 go 1.25.0
 
 require (
+	github.com/OptLTD/library/jsmodule v0.1.1
 	github.com/grafana/sobek v0.0.0-20260309140132-c198b3f43d96
 	github.com/stretchr/testify v1.11.1
 )

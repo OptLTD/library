@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/grafana/sobek"
-	"jsrunner/modulestest"
-	_ "jsmodule/timers"
+	"github.com/OptLTD/library/jsrunner/modulestest"
+	_ "github.com/OptLTD/library/jsmodule/timers"
 	"github.com/stretchr/testify/assert"
 )
 

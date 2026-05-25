@@ -1,4 +1,4 @@
-module formula
+module github.com/OptLTD/library/formula
 
 go 1.25.0
 

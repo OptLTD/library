@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/promise"
-	"jsrunner/types"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/promise"
+	"github.com/OptLTD/library/jsrunner/types"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 var (

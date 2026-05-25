@@ -20,19 +20,52 @@ on:
   push:
     tags:
       - release/v*
+      - search/v*
+      - formula/v*
+      - jsrunner/v*
+      - jsmodule/v*
 
 permissions:
   contents: write
 
 concurrency:
-  group: release
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 env:
   MODULE_PREFIX: github.com/OptLTD/library
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.work
+          cache-dependency-path: |
+            search/go.sum
+            formula/go.sum
+            jsrunner/go.sum
+            jsmodule/go.sum
+
+      - name: Sync workspace
+        run: go work sync
+
+      - name: Test modules
+        run: |
+          set -euo pipefail
+          for mod in search formula jsrunner jsmodule; do
+            echo "testing $mod"
+            (cd "$mod" && go test ./...)
+          done
+
   release:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -68,11 +101,10 @@ jobs:
       - name: Sync workspace
         run: go work sync
 
-      - name: Validate and test
+      - name: Validate modules
         env:
           VERSION: ${{ steps.meta.outputs.version }}
           MODULES: ${{ github.event_name == 'workflow_dispatch' && inputs.modules || 'search,formula,jsrunner,jsmodule' }}
-          SKIP_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_tests || 'false' }}
         run: |
           set -euo pipefail
 
@@ -97,13 +129,6 @@ jobs:
               exit 1
             fi
           done
-
-          if [[ "$SKIP_TESTS" != "true" ]]; then
-            for mod in "${mods[@]}"; do
-              echo "testing $mod"
-              (cd "$mod" && go test ./...)
-            done
-          fi
 
           for mod in "${mods[@]}"; do
             tag="${mod}/${VERSION}"

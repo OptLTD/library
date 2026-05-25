@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	"github.com/OptLTD/library/jsrunner"
 )
 
 // Callback is a function that receives a function to resolve/reject the promise.

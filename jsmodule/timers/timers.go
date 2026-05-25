@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 // Timers implements JavaScript timer functions

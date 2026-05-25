@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	_ "jsmodule/buffer"
-	_ "jsmodule/encoding"
+	_ "github.com/OptLTD/library/jsmodule/buffer"
+	_ "github.com/OptLTD/library/jsmodule/encoding"
 
-	js "jsrunner"
+	js "github.com/OptLTD/library/jsrunner"
 )
 
 func JSModule() error {

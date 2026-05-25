@@ -3,10 +3,10 @@ module example
 go 1.25.0
 
 require (
-	formula v0.0.0
-	jsmodule v0.0.0
-	jsrunner v0.0.0
-	search v0.0.0
+	github.com/OptLTD/library/formula v0.0.0
+	github.com/OptLTD/library/jsmodule v0.1.1
+	github.com/OptLTD/library/jsrunner v0.1.1
+	github.com/OptLTD/library/search v0.0.0
 )
 
 require (
@@ -46,8 +46,8 @@ require (
 )
 
 replace (
-	formula => ../formula
-	jsmodule => ../jsmodule
-	jsrunner => ../jsrunner
-	search => ../search
+	github.com/OptLTD/library/formula => ../formula
+	github.com/OptLTD/library/jsmodule => ../jsmodule
+	github.com/OptLTD/library/jsrunner => ../jsrunner
+	github.com/OptLTD/library/search => ../search
 )

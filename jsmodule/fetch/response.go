@@ -14,12 +14,12 @@ import (
 	"sync/atomic"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/promise"
-	"jsrunner/types"
-	"jsmodule/buffer"
-	"jsmodule/stream"
-	"jsmodule/url"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/promise"
+	"github.com/OptLTD/library/jsrunner/types"
+	"github.com/OptLTD/library/jsmodule/buffer"
+	"github.com/OptLTD/library/jsmodule/stream"
+	"github.com/OptLTD/library/jsmodule/url"
 )
 
 var (

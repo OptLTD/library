@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/grafana/sobek"
-	"jsmodule"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 type toValue interface {

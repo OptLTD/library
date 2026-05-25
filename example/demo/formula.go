@@ -3,7 +3,7 @@ package demo
 import (
 	"fmt"
 
-	formulalib "formula"
+	formulalib "github.com/OptLTD/library/formula"
 )
 
 func Formula() error {

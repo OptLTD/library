@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/promise"
-	"jsrunner/types"
-	"jsmodule"
-	"jsmodule/fetch"
-	"jsmodule/signal"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/promise"
+	"github.com/OptLTD/library/jsrunner/types"
+	"github.com/OptLTD/library/jsmodule"
+	"github.com/OptLTD/library/jsmodule/fetch"
+	"github.com/OptLTD/library/jsmodule/signal"
 )
 
 func init() {

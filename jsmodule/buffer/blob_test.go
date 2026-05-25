@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/grafana/sobek"
-	"jsrunner/modulestest"
+	"github.com/OptLTD/library/jsrunner/modulestest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

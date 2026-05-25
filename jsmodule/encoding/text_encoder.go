@@ -2,7 +2,7 @@ package encoding
 
 import (
 	"github.com/grafana/sobek"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // TextEncoder takes a stream of code points as input and emits a stream of UTF-8 bytes.

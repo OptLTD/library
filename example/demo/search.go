@@ -3,12 +3,12 @@ package demo
 import (
 	"fmt"
 
-	"search/consts"
-	"search/engine"
-	"search/request"
-	"search/respond"
-	"search/schema"
-	"search/source"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/engine"
+	"github.com/OptLTD/library/search/request"
+	"github.com/OptLTD/library/search/respond"
+	"github.com/OptLTD/library/search/schema"
+	"github.com/OptLTD/library/search/source"
 )
 
 func Search() error {

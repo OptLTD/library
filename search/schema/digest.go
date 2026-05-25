@@ -1,8 +1,8 @@
 package schema
 
 import (
-	"search/consts"
-	"search/source"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/source"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"

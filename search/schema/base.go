@@ -1,6 +1,6 @@
 package schema
 
-import "search/request"
+import "github.com/OptLTD/library/search/request"
 
 type ISchema interface {
 	GetGroups() []Group

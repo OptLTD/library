@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"search/consts"
-	"search/respond"
-	"search/schema"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/respond"
+	"github.com/OptLTD/library/search/schema"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7"

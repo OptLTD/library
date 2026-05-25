@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	js "jsrunner"
+	js "github.com/OptLTD/library/jsrunner"
 )
 
 func JSRunner() error {

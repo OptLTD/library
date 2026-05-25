@@ -1,17 +1,15 @@
-module jsmodule
+module github.com/OptLTD/library/jsmodule
 
 go 1.25.0
 
 require (
+	github.com/OptLTD/library/jsrunner v0.1.1
 	github.com/grafana/sobek v0.0.0-20260309140132-c198b3f43d96
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.48.0
 	golang.org/x/net v0.50.0
 	golang.org/x/text v0.34.0
-	jsrunner v0.0.0
 )
-
-replace jsrunner => ../jsrunner
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

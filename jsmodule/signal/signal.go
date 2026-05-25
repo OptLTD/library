@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 func init() {

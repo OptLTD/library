@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"jsrunner"
+	"github.com/OptLTD/library/jsrunner"
 )
 
 // Aes returns a new AES cipher

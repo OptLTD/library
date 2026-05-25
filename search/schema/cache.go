@@ -3,8 +3,8 @@ package schema
 import (
 	"context"
 	"encoding/json"
-	"search/consts"
-	"search/support"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/support"
 	"strings"
 	"time"
 

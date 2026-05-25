@@ -3,9 +3,9 @@ package loader
 import (
 	"context"
 	"encoding/json"
-	"search/consts"
-	"search/source"
-	"search/support"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/source"
+	"github.com/OptLTD/library/search/support"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"

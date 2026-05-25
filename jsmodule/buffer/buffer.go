@@ -12,8 +12,8 @@ import (
 	"strconv"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // Buffer used to represent a fixed-length sequence of bytes.

@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 
 	"github.com/grafana/sobek"
-	"jsmodule"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 var loader atomic.Value

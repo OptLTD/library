@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
+	"github.com/OptLTD/library/jsrunner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	_ "jsmodule/encoding"
-	_ "jsmodule/fetch"
-	_ "jsmodule/signal"
-	_ "jsmodule/timers"
+	_ "github.com/OptLTD/library/jsmodule/encoding"
+	_ "github.com/OptLTD/library/jsmodule/fetch"
+	_ "github.com/OptLTD/library/jsmodule/signal"
+	_ "github.com/OptLTD/library/jsmodule/timers"
 )
 
 const (

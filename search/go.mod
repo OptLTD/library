@@ -1,4 +1,4 @@
-module search
+module github.com/OptLTD/library/search
 
 go 1.25.0
 
@@ -46,5 +46,3 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 )
-
-replace formula => ../formula

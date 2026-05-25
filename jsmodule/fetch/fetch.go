@@ -2,8 +2,8 @@ package fetch
 
 import (
 	"github.com/grafana/sobek"
-	"jsrunner/promise"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner/promise"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 // Fetch the global fetch() method starts the process of

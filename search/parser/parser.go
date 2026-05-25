@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"search/request"
-	"search/schema"
-	"search/source"
+	"github.com/OptLTD/library/search/request"
+	"github.com/OptLTD/library/search/schema"
+	"github.com/OptLTD/library/search/source"
 )
 
 type IParser interface {

@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 func init() {

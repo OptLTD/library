@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"testing"
 
-	"jsrunner/modulestest"
-	"jsrunner/promise"
+	"github.com/OptLTD/library/jsrunner/modulestest"
+	"github.com/OptLTD/library/jsrunner/promise"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

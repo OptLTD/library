@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsmodule/signal"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsmodule/signal"
 )
 
 // EventTarget defines the DOM EventTarget interface

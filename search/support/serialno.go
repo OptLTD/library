@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"search/consts"
+	"github.com/OptLTD/library/search/consts"
 	"strconv"
 	"strings"
 	"time"

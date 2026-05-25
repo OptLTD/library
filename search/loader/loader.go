@@ -2,8 +2,8 @@ package loader
 
 import (
 	"context"
-	"search/consts"
-	"search/source"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/source"
 	"strings"
 )
 

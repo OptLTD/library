@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/grafana/sobek"
-	"jsrunner/types"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner/types"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 func init() {

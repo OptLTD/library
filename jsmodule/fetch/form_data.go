@@ -15,9 +15,9 @@ import (
 	"sync/atomic"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/types"
-	"jsmodule/buffer"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/types"
+	"github.com/OptLTD/library/jsmodule/buffer"
 )
 
 // FormData provides a way to construct a set of key/value pairs representing form fields and their values.

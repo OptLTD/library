@@ -24,16 +24,19 @@ Release workflow 会校验：
 2. 不存在 `replace` 指令（否则外部 `go get` 会失败）
 3. 测试通过
 
-**首次发布前**，请先把各子目录 `go.mod` 的 module 名从 `search` 改为 `github.com/OptLTD/library/search`，并把 `replace` 改成正常的 `require` + 版本号。
+**发布 v0.1.1 前**请确认 `jsrunner/go.mod` 与 `jsmodule/go.mod` 里互相引用的版本号与本次 tag 一致。
 
 Tag 格式为 `<module>/<version>`，例如 `search/v0.1.0`。
 
-## GitHub Actions 自动发布
+## GitHub Actions
 
-| Workflow | 触发 | 作用 |
-|----------|------|------|
-| `CI` | push / PR 到 main | 跑全部 module 测试 |
-| `Release` | 手动 或 push `release/v*` tag | 校验、测试、打 module tag 并 push |
+仅在推送**版本 tag** 时触发，push 到 `main` 不会运行。
+
+| 触发方式 | 行为 |
+|----------|------|
+| push `search/v0.1.0` 等 module tag | 跑测试 |
+| push `release/v0.1.0` | 跑测试 + 为全部 module 打 tag 并 push |
+| Actions 页面手动 Run workflow | 跑测试 + 发布（可指定 module） |
 
 ### 方式一：Actions 页面手动发布
 

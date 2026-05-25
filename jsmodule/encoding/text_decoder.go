@@ -8,8 +8,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsmodule"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsmodule"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // Headers allows you to perform various actions on HTTP request and response headers.

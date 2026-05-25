@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	js "jsrunner"
+	js "github.com/OptLTD/library/jsrunner"
 
 	"github.com/grafana/sobek"
 	"github.com/stretchr/testify/assert"

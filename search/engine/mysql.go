@@ -3,11 +3,11 @@ package engine
 import (
 	"fmt"
 	"log"
-	"search/consts"
-	"search/respond"
-	"search/schema"
-	"search/source"
-	"search/support"
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/respond"
+	"github.com/OptLTD/library/search/schema"
+	"github.com/OptLTD/library/search/source"
+	"github.com/OptLTD/library/search/support"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"

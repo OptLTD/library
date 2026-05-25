@@ -16,8 +16,8 @@ func main() {
 	}{
 		{"formula", demo.Formula},
 		{"search", demo.Search},
-		{"jsrunner", demo.JSRunner},
-		{"jsmodule", demo.JSModule},
+		{"github.com/OptLTD/library/jsrunner", demo.JSRunner},
+		{"github.com/OptLTD/library/jsmodule", demo.JSModule},
 	}
 
 	for _, item := range runners {

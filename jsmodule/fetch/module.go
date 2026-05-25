@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"jsmodule"
+	"github.com/OptLTD/library/jsmodule"
 )
 
 func init() {

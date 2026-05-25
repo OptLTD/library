@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // File object is a specific kind of Blob, and can be used in any context that a Blob can.

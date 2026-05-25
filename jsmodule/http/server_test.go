@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	js "jsrunner"
-	"jsrunner/modulestest"
-	"jsrunner/promise"
-	_ "jsmodule/timers"
+	js "github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/modulestest"
+	"github.com/OptLTD/library/jsrunner/promise"
+	_ "github.com/OptLTD/library/jsmodule/timers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"jsrunner/modulestest"
+	"github.com/OptLTD/library/jsrunner/modulestest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

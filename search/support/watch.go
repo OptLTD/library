@@ -3,7 +3,7 @@ package support
 import (
 	"time"
 
-	"search/consts"
+	"github.com/OptLTD/library/search/consts"
 )
 
 // DefaultSlowLogThresholdMs 未 Register(consts.SLOW_THRESHOLD) 时的回退值（毫秒）。

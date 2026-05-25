@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/grafana/sobek"
-	js "jsrunner"
+	js "github.com/OptLTD/library/jsrunner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

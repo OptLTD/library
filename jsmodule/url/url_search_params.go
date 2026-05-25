@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/grafana/sobek"
-	"jsrunner"
-	"jsrunner/types"
+	"github.com/OptLTD/library/jsrunner"
+	"github.com/OptLTD/library/jsrunner/types"
 )
 
 // URLSearchParams defines utility methods to work with the query string of a URL,
