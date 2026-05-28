@@ -3,14 +3,15 @@ package parser
 import (
 	"maps"
 	"regexp"
+	"slices"
+	"sort"
+	"strings"
+
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"slices"
-	"sort"
-	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -45,7 +46,8 @@ func (self *TableParser) Build(value *source.Value, request *request.Search) (*s
 		}
 	}
 	if table == nil && !match {
-		table = &source.Table{}
+		clicks := []string{"[SETUP][*]"}
+		table = &source.Table{Clicks: clicks}
 		keys := maputil.Keys(value.Tables)
 		support.LogDebugf(self.request.LogID,
 			"Table not found %s of [%s], keys: %s",
