@@ -1,6 +1,8 @@
 package support
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"reflect"
 	"regexp"
 	"sort"
@@ -57,11 +59,22 @@ func Contains(array []string, target string) bool {
 func GetVal(value []byte, dataType parser.ValueType) any {
 	switch dataType {
 	case parser.Boolean:
-		return value
+		if b, err := parser.ParseBoolean(value); err == nil {
+			return b
+		}
+		return string(value) == "true"
 	case parser.Object:
-		return value
+		var obj map[string]any
+		if json.Unmarshal(value, &obj) == nil {
+			return obj
+		}
+		return nil
 	case parser.Array:
-		return value
+		var arr []any
+		if json.Unmarshal(value, &arr) == nil {
+			return arr
+		}
+		return nil
 	case parser.String:
 		return string(value)
 	case parser.Number:
@@ -74,6 +87,53 @@ func GetVal(value []byte, dataType parser.ValueType) any {
 		}
 	}
 	return nil
+}
+
+// NormalizeQueryValue 修正 query 条件值：JSON 数组/对象、[]byte、以及历史遗留的 base64 编码 JSON。
+func NormalizeQueryValue(val any) any {
+	if val == nil {
+		return val
+	}
+	switch v := val.(type) {
+	case []byte:
+		var parsed any
+		if json.Unmarshal(v, &parsed) == nil {
+			return parsed
+		}
+		return v
+	case string:
+		if decoded, err := base64.StdEncoding.DecodeString(v); err == nil {
+			var parsed any
+			if json.Unmarshal(decoded, &parsed) == nil {
+				switch parsed.(type) {
+				case []any, map[string]any:
+					return parsed
+				}
+			}
+		}
+		return v
+	default:
+		return val
+	}
+}
+
+// NormalizeQueryObject 规范化 table.query / 默认筛选 map。
+func NormalizeQueryObject(query map[string]any) map[string]any {
+	if len(query) == 0 {
+		return query
+	}
+	flat := map[string]any{}
+	data, err := json.Marshal(query)
+	if err != nil {
+		return query
+	}
+	if err := json.Unmarshal(data, &flat); err != nil {
+		return query
+	}
+	for key, val := range flat {
+		flat[key] = NormalizeQueryValue(val)
+	}
+	return flat
 }
 
 func GetType(val any) string {

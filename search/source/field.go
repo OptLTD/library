@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/support"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/support"
 
 	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/duke-git/lancet/v2/slice"
@@ -41,6 +42,7 @@ type FExtra struct {
 	// edit props
 	Required bool `json:"required,omitempty" bson:"required,omitempty"`
 	Multiple bool `json:"multiple,omitempty" bson:"multiple,omitempty"`
+	Implicit bool `json:"implicit,omitempty" bson:"implicit,omitempty"`
 	// edit mode
 	Editable string `json:"editable,omitempty" bson:"editable,omitempty"`
 	Disabled string `json:"disabled,omitempty" bson:"disabled,omitempty"`

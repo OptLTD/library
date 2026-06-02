@@ -3,7 +3,6 @@ package loader
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
@@ -175,19 +174,17 @@ func (self *MongoLoader) getTables(ctx context.Context, where map[string]any) (m
 
 	final := map[string]source.Table{}
 	for _, table := range result {
-		if len(table.Query) == 0 {
-			final[table.UUKey] = table
-			continue
+		if len(table.Query) > 0 {
+			table.Query = support.NormalizeQueryObject(table.Query)
 		}
-		// fix query json of bson
-		// private.M to map[string]any
-		var query = map[string]any{}
-		if data, err := json.Marshal(table.Query); err != nil {
-			log.Println("what happend", err)
-		} else if json.Unmarshal(data, &query) != nil {
-			log.Println("what happend", err)
-		} else if len(query) > 0 {
-			table.Query = query
+		if len(table.Extra) > 0 {
+			var extra = map[string]any{}
+			if data, err := json.Marshal(table.Extra); err == nil {
+				json.Unmarshal(data, &extra)
+			}
+			if len(extra) > 0 {
+				table.Extra = extra
+			}
 		}
 		final[table.UUKey] = table
 	}

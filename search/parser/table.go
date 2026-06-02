@@ -66,6 +66,9 @@ func (self *TableParser) Build(value *source.Value, request *request.Search) (*s
 		// 主要为了digest场景下带入分组求和信息
 		maps.Copy(others, request.Extra)
 	}
+	if table != nil && len(table.Extra) > 0 {
+		maps.Copy(others, table.Extra)
+	}
 	self.schema = &schema.Table{
 		Model: model, Table: table, Query: request.Query,
 		Groups: groups, Fields: fields, Scene: value.Scene,
@@ -188,8 +191,10 @@ func (self *TableParser) BuildTables() []source.Table {
 
 func (self *TableParser) CheckShown(field source.Field, table *source.Table) string {
 	visible, hidden := false, false
-	if len(table.Fields) == 0 {
+	if len(table.Fields) == 0 && len(table.Hidden) == 0 {
 		return consts.VISIBLE_SHOW
+	} else if len(table.Fields) == 0 {
+		visible = true
 	}
 
 	for _, item := range table.Fields {

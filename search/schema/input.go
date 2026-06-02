@@ -25,8 +25,9 @@ type Input struct {
 	XRules []XRule `json:"xrules,omitempty"` // 表单事件
 	Clicks []Click `json:"clicks,omitempty"` // 表单按钮
 
-	Values map[string]any `json:"values,omitempty"` // 分组信息
-	Refers map[string]any `json:"refers,omitempty"` // 字典信息
+	Values object `json:"values,omitempty"` // 分组信息
+	Refers object `json:"refers,omitempty"` // 字典信息
+	Others object `json:"-"`                // 视图扩展配置
 
 	// 传入信息
 	Account *request.Account `json:"-"`       // 登陆用户

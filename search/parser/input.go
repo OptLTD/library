@@ -1,13 +1,17 @@
 package parser
 
 import (
+	"maps"
 	"regexp"
+	"slices"
+	"sort"
+	"strings"
+
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -42,7 +46,8 @@ func (self *InputParser) Build(value *source.Value, request *request.Record) (an
 		}
 	}
 	if input == nil && !match {
-		input = &source.Input{}
+		clicks := []string{"[SETUP][*]"}
+		input = &source.Input{Clicks: clicks}
 		keys := maputil.Keys(value.Inputs)
 		support.LogWarnf(self.request.LogID,
 			"Input not found %s of [%s], keys: %s",
@@ -55,11 +60,16 @@ func (self *InputParser) Build(value *source.Value, request *request.Record) (an
 	xrules := self.BuildXRules(input)
 	groups := maputil.Values(value.Groups)
 	slice.SortByField(groups, "SeqNo")
+	others := map[string]any{}
+	if input != nil && len(input.Extra) > 0 {
+		maps.Copy(others, input.Extra)
+	}
 	self.schema = &schema.Input{
 		Model: model, Input: input, Title: input.Title,
 		Groups: groups, Fields: fields, Clicks: clicks,
 		XRules: xrules, Source: value, Request: request,
 		Account: request.Login, Refers: map[string]any{},
+		Others: others,
 	}
 
 	for _, handle := range self.handles {
@@ -70,6 +80,7 @@ func (self *InputParser) Build(value *source.Value, request *request.Record) (an
 
 func (self *InputParser) PrepareReq(req *request.Record) *request.Record {
 	req.Using = support.Or(req.Using, "default")
+	req.SyncOpType()
 	return req
 }
 func (self *InputParser) BuildModel() *source.Model {
@@ -114,14 +125,53 @@ func (self *InputParser) BuildFields(input *source.Input) []source.Field {
 }
 
 func (self *InputParser) BuildClicks(input *source.Input) []source.Click {
+	clicks := self.source.Clicks
 	result := []source.Click{}
-	for key, click := range self.source.Clicks {
-		click.CType = support.Or(click.CType, "ACTION")
-		click.CType = strings.ToUpper(click.CType)
-		if slice.Contain(input.Clicks, key) {
-			result = append(result, click)
+
+	// [NAME][*] => 从 source.Clicks 中收集所有以 [NAME] 为前缀的 key，作为展开结果
+	var expandedKeys []string
+	for _, key := range input.Clicks {
+		if !strings.HasSuffix(key, "[*]") {
+			expandedKeys = append(expandedKeys, key)
+			continue
+		}
+
+		var matched []string
+		prefix := strings.TrimSuffix(key, "[*]")
+		for mapKey := range clicks {
+			if strings.HasPrefix(mapKey, prefix) {
+				matched = append(matched, mapKey)
+			}
+		}
+		expandedKeys = append(expandedKeys, matched...)
+	}
+	reqScene := self.request.GetOpType()
+	switch reqScene {
+	case consts.ACTION_UPDATE:
+		reqScene = consts.SCENE_INPUT
+	case consts.ACTION_INSERT:
+		reqScene = consts.SCENE_INPUT
+	}
+	for _, key := range expandedKeys {
+		if act, ok := clicks[key]; ok {
+			act.CType = strings.ToUpper(act.CType)
+			act.CType = support.Or(act.CType, "BUTTON")
+			act.Scene = support.Or(act.Scene, []string{
+				consts.SCENE_DETAIL, consts.SCENE_INPUT,
+			})
+			if slices.Contains(act.Scene, reqScene) {
+				result = append(result, act)
+			}
 		}
 	}
+
+	// SeqNo + UUKey 双关键字排序，保证 clicks 展开结果顺序稳定
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].SeqNo != result[j].SeqNo {
+			return result[i].SeqNo < result[j].SeqNo
+		}
+		return result[i].UUKey < result[j].UUKey
+	})
 	return result
 }
 
@@ -146,6 +196,9 @@ func (self *InputParser) BuildInputs() []source.Input {
 }
 
 func (self *InputParser) CheckShown(field source.Field, input *source.Input) string {
+	if field.Extra.Implicit {
+		return consts.VISIBLE_HIDE
+	}
 	if len(input.Fields) == 0 {
 		return consts.VISIBLE_SHOW
 	}

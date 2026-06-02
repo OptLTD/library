@@ -180,11 +180,8 @@ func (self *JSONLoader) parseField(value []byte, item source.Group) source.Field
 	ftype, _ := parser.GetString(value, "ftype")
 	index, _ := parser.GetString(value, "index")
 	using, err := parser.GetString(value, "using")
-	width, err := parser.GetInt(value, "width")
+	width, _ := parser.GetInt(value, "width")
 	seqno, _ := parser.GetInt(value, "seqno")
-	if err != nil {
-		width = 80
-	}
 	var refer *source.Refer
 	if using != "" {
 		refer = new(source.Refer)
@@ -223,11 +220,11 @@ func (self *JSONLoader) parseTables(tablesParse string) map[string]source.Table 
 		table := source.Table{Title: title, UUKey: string(key)}
 
 		table.Query = map[string]any{}
-		err := parser.ObjectEach([]byte(value), func(k []byte, val []byte, dataType parser.ValueType, offset int) error {
-			table.Query[string(k)] = support.GetVal(val, dataType)
-			return nil
-		}, "query")
+		if queryRaw, qType, _, err := parser.Get(value, "query"); err == nil && qType == parser.Object {
+			_ = json.Unmarshal(queryRaw, &table.Query)
+		}
 		// 显示字段
+		var err error
 		_, err = parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
 			table.Fields = append(table.Fields, string(val))
 		}, "fields")
@@ -245,14 +242,13 @@ func (self *JSONLoader) parseTables(tablesParse string) map[string]source.Table 
 		parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
 			table.Hidden = append(table.Hidden, string(val))
 		}, "hidden")
-		// 聚合字段
-		// _, err = parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-		// 	table.AggrBy = append(table.AggrBy, string(val))
-		// }, "aggrby")
-		// filters 处理
-		// parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-		// 	table.Filters = append(table.Filters, string(val))
-		// }, "filters")
+
+		var tablePatch struct {
+			Extra map[string]any `json:"extra"`
+		}
+		if err := json.Unmarshal(value, &tablePatch); err == nil && len(tablePatch.Extra) > 0 {
+			table.Extra = tablePatch.Extra
+		}
 
 		tables[string(key)] = table
 		return nil

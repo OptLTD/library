@@ -161,6 +161,9 @@ func (self *MySQLLoader) getTables(ctx context.Context, where map[string]any) (m
 		if hidden, ok := item["hidden"]; ok && hidden != nil && hidden != "" {
 			json.Unmarshal([]byte(hidden.(string)), &table.Hidden)
 		}
+		if extra, ok := item["extra"]; ok && extra != nil && extra != "" {
+			json.Unmarshal([]byte(extra.(string)), &table.Extra)
+		}
 		tables[table.UUKey] = table
 	})
 	return tables, nil

@@ -2,9 +2,10 @@ package loader
 
 import (
 	"context"
+	"strings"
+
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/source"
-	"strings"
 )
 
 type SchemaTableName struct {
@@ -41,14 +42,6 @@ func ResetDefaultGroup(groups map[string]source.Group) source.Group {
 		basic.SeqNo = 0
 		return basic
 	}
-	return source.Group{
-		UUKey: "basic",
-		GType: "FLATTEN",
-		Title: "基础信息",
-	}
-}
-
-func getDefaultGroup() source.Group {
 	return source.Group{
 		UUKey: "basic",
 		GType: "FLATTEN",
