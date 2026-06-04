@@ -103,7 +103,7 @@ func (self *MemoryEngine) Store(skma *schema.Input, record *respond.Record) erro
 		self.storage[table] = make(map[string]map[string]any)
 	}
 
-	if record.Event == "" || record.Event == "INSERT" {
+	if record.OpType == "" || record.OpType == "INSERT" {
 		merged := maputil.Merge(record.Default, upsert)
 		self.storage[table][record.UUKey] = merged
 	} else {

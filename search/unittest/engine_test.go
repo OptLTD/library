@@ -201,7 +201,7 @@ func TestMemoryEngine_Store(t *testing.T) {
 		},
 	}
 
-	record.Event = "INSERT"
+	record.OpType = "INSERT"
 	err := memEngine.Store(skma, record)
 	assert.NoError(t, err)
 
@@ -231,7 +231,7 @@ func TestMemoryEngine_Store(t *testing.T) {
 			"uukey": "test_001",
 		},
 	}
-	record.Event = "UPDATE"
+	record.OpType = "UPDATE"
 	err = memEngine.Store(skma, record)
 	assert.NoError(t, err)
 }
@@ -273,7 +273,7 @@ func TestMemoryEngine_Select(t *testing.T) {
 	}
 
 	for _, rec := range records {
-		rec.Event = "INSERT"
+		rec.OpType = "INSERT"
 		err := memEngine.Store(skma, rec)
 		assert.NoError(t, err)
 	}
@@ -393,7 +393,7 @@ func TestMemoryEngine_Search(t *testing.T) {
 	}
 
 	for _, rec := range records {
-		rec.Event = "INSERT"
+		rec.OpType = "INSERT"
 		err := memEngine.Store(input, rec)
 		assert.NoError(t, err)
 	}
@@ -462,7 +462,7 @@ func TestMemoryEngine_QueryLogic(t *testing.T) {
 	}
 
 	for _, rec := range records {
-		rec.Event = "INSERT"
+		rec.OpType = "INSERT"
 		err := memEngine.Store(input, rec)
 		assert.NoError(t, err)
 	}

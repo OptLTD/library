@@ -164,6 +164,12 @@ func (self *MySQLLoader) getTables(ctx context.Context, where map[string]any) (m
 		if extra, ok := item["extra"]; ok && extra != nil && extra != "" {
 			json.Unmarshal([]byte(extra.(string)), &table.Extra)
 		}
+		if rename, ok := item["rename"]; ok && rename != nil && rename != "" {
+			json.Unmarshal([]byte(rename.(string)), &table.Rename)
+		}
+		if replace, ok := item["replace"]; ok && replace != nil && replace != "" {
+			json.Unmarshal([]byte(replace.(string)), &table.Replace)
+		}
 		tables[table.UUKey] = table
 	})
 	return tables, nil
@@ -206,6 +212,18 @@ func (self *MySQLLoader) getInputs(ctx context.Context, where map[string]any) (m
 		}
 		if clicks, ok := item["clicks"]; ok && clicks != nil && clicks != "" {
 			json.Unmarshal([]byte(clicks.(string)), &input.Clicks)
+		}
+		if hidden, ok := item["hidden"]; ok && hidden != nil && hidden != "" {
+			json.Unmarshal([]byte(hidden.(string)), &input.Hidden)
+		}
+		if preset, ok := item["preset"]; ok && preset != nil && preset != "" {
+			json.Unmarshal([]byte(preset.(string)), &input.Preset)
+		}
+		if rename, ok := item["rename"]; ok && rename != nil && rename != "" {
+			json.Unmarshal([]byte(rename.(string)), &input.Rename)
+		}
+		if replace, ok := item["replace"]; ok && replace != nil && replace != "" {
+			json.Unmarshal([]byte(replace.(string)), &input.Replace)
 		}
 		inputs[input.UUKey] = input
 	})

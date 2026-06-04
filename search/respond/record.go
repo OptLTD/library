@@ -2,13 +2,14 @@ package respond
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"strings"
-	"time"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -16,10 +17,11 @@ import (
 )
 
 type Record struct {
-	UUKey string `json:"uukey"`
-	Model string `json:"model"`
-	LogID string `json:"logid"`
-	Event string `json:"event"`
+	UUKey  string `json:"uukey"`
+	Model  string `json:"model"`
+	LogID  string `json:"logid"`
+	OpType string `json:"opType,omitempty"`
+	Action string `json:"action,omitempty"`
 
 	Exists bool   `json:"exists"` // 是否存在
 	System object `json:"system"` // 系统数据
@@ -241,7 +243,7 @@ func (self *Record) GetRelated(group *source.Group) *request.Record {
 
 	request := &request.Record{
 		Model: group.Extra.Relation,
-		LogID: self.LogID, Scene: self.Event,
+		LogID: self.LogID, Scene: self.OpType,
 	}
 
 	if group.Extra.Multiple {
@@ -430,13 +432,12 @@ func (self *Record) ToPrepare(skma schema.ISchema, flatten object) object {
 				if field.Group != group.UUKey {
 					continue
 				}
-				// 处理日期时间字段
+				// 处理日期时间字段, 用于按期/周字段fill to prepare
 				if field.FType == consts.FTYPE_DATETIME {
-					if field.HasTimeTerm() {
+					find, ok := request[field.Field]
+					if ok && field.HasTimeTerm() {
 						expand = &field
-						dateTime = self.asTime(
-							request[field.Field],
-						)
+						dateTime = self.asTime(find)
 					}
 				}
 				// 禁用字段不能修改

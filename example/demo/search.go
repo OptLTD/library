@@ -80,9 +80,9 @@ func Search() error {
 
 	for _, row := range rows {
 		record := &respond.Record{
-			UUKey: row.uukey,
-			Model: "demo_model",
-			Event: "INSERT",
+			UUKey:  row.uukey,
+			Model:  "demo_model",
+			OpType: "INSERT",
 			Default: map[string]any{
 				"uukey": row.uukey,
 			},

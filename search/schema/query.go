@@ -209,16 +209,22 @@ func BuildPreset(requst map[string]any, skma *Table) map[string]any {
 				finish = time.Date(t.Year(), 1, 1, 0, 0, 0, 0, t.Location())
 			case "RECENT_3_DAYS":
 				start = start.AddDate(0, 0, -3)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_1_WEEK":
 				start = start.AddDate(0, 0, -7)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_2_WEEK":
 				start = start.AddDate(0, 0, -14)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_1_MONTH":
 				start = start.AddDate(0, -1, 0)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_3_MONTH":
 				start = start.AddDate(0, -3, 0)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_6_MONTH":
 				start = start.AddDate(0, -6, 0)
+				finish = finish.AddDate(0, 0, 1)
 			case "FUTURE_1_WEEK":
 				finish = finish.AddDate(0, 0, 7)
 			case "FUTURE_2_WEEK":

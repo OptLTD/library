@@ -9,6 +9,8 @@ type Table struct {
 	Extra  object   `json:"extra" bson:"extra"`   // 透视/合并等默认配置
 	Fields []string `json:"fields" bson:"fields"` // 可用字段
 	Hidden []string `json:"hidden" bson:"hidden"` // 隐藏字段
+	Rename object   `json:"rename" bson:"rename"` // uukey -> label
+	Replace object  `json:"replace" bson:"replace"` // uukey -> FExtra 属性
 	Clicks []string `json:"clicks" bson:"clicks"` // 表格动作
 
 	Order []Order   `json:"-" bson:"-" gorm:"-"` // 默认排序

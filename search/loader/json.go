@@ -210,81 +210,36 @@ func (self *JSONLoader) parseField(value []byte, item source.Group) source.Field
 }
 
 func (self *JSONLoader) parseTables(tablesParse string) map[string]source.Table {
-	// 处理tables
 	tables := map[string]source.Table{
 		"default": {Title: "default", UUKey: "default"},
 	}
 	parser.ObjectEach([]byte(tablesParse), func(key []byte, value []byte, dataType parser.ValueType, offset int) error {
-		title, _ := parser.GetString(value, "title")
-		fields, _ := parser.GetString(value, "fields")
-		table := source.Table{Title: title, UUKey: string(key)}
-
-		table.Query = map[string]any{}
-		if queryRaw, qType, _, err := parser.Get(value, "query"); err == nil && qType == parser.Object {
-			_ = json.Unmarshal(queryRaw, &table.Query)
+		table := source.Table{UUKey: string(key)}
+		if err := json.Unmarshal(value, &table); err != nil {
+			return err
 		}
-		// 显示字段
-		var err error
-		_, err = parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			table.Fields = append(table.Fields, string(val))
-		}, "fields")
-		if err != nil && fields == "null" {
-			// 在闭包中无法直接获取 logID，使用空字符串
-			support.LogWarn("", "field error", err)
+		if table.UUKey == "" {
+			table.UUKey = string(key)
 		}
-
-		// action 处理
-		parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			table.Clicks = append(table.Clicks, string(val))
-		}, "clicks")
-
-		// 隐藏字段处理
-		parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			table.Hidden = append(table.Hidden, string(val))
-		}, "hidden")
-
-		var tablePatch struct {
-			Extra map[string]any `json:"extra"`
+		if len(table.Query) > 0 {
+			table.Query = support.NormalizeQueryObject(table.Query)
 		}
-		if err := json.Unmarshal(value, &tablePatch); err == nil && len(tablePatch.Extra) > 0 {
-			table.Extra = tablePatch.Extra
-		}
-
 		tables[string(key)] = table
 		return nil
 	})
 	return tables
 }
+
 func (self *JSONLoader) parseInputs(inputsParse string) map[string]source.Input {
-	// 处理 inputs
 	inputs := map[string]source.Input{}
 	parser.ObjectEach([]byte(inputsParse), func(key []byte, value []byte, dataType parser.ValueType, offset int) error {
-		title, _ := parser.GetString(value, "title")
-		input := source.Input{Title: title, UUKey: string(key)}
-		// 显示字段
-		fields := []string{}
-		_, err := parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			fields = append(fields, string(val))
-		}, "fields")
-		if err != nil {
-			return support.ErrorInputField
+		input := source.Input{UUKey: string(key)}
+		if err := json.Unmarshal(value, &input); err != nil {
+			return err
 		}
-		input.Fields = fields
-
-		// button 处理
-		clicks := []string{}
-		parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			clicks = append(clicks, string(val))
-		}, "clicks")
-		input.Clicks = clicks
-
-		// action 处理
-		xrules := []string{}
-		parser.ArrayEach([]byte(value), func(val []byte, dataType parser.ValueType, offset int, err error) {
-			xrules = append(xrules, string(val))
-		}, "xrules")
-		input.XRules = xrules
-
+		if input.UUKey == "" {
+			input.UUKey = string(key)
+		}
 		inputs[string(key)] = input
 		return nil
 	})

@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
+	"time"
+
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"strings"
-	"time"
 
 	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/duke-git/lancet/v2/maputil"
@@ -100,7 +101,7 @@ func (self *MongoEngine) Store(skma *schema.Input, record *respond.Record) error
 	var err error
 	collect := self.client.Collection(table)
 	t0 := time.Now()
-	if record.Event == "" || record.Event == "INSERT" {
+	if record.OpType == "" || record.OpType == "INSERT" {
 		merged := maputil.Merge(record.Default, upsert)
 		_, err = collect.InsertOne(
 			context.TODO(), merged,
@@ -118,7 +119,7 @@ func (self *MongoEngine) Store(skma *schema.Input, record *respond.Record) error
 	cost := time.Since(t0).Milliseconds()
 	support.LogKVByCostMs(logID, "mongo store record", cost,
 		"table", table, "query", preset, "filter", parsed,
-		"event", record.Event, "uukey", record.UUKey,
+		"op_type", record.OpType, "uukey", record.UUKey,
 	)
 	// 处理回掉
 	for _, handle := range self.handles {

@@ -73,7 +73,7 @@ func (self *MySQLEngine) Store(skma *schema.Input, record *respond.Record) error
 	dftQuery, _ := schema.BuildQuery(where)
 	parsedQuery := self.buildQuery(consts.LOGIC_SUBAND, &dftQuery)
 	query := self.client.Table(table).Clauses(parsedQuery...)
-	if record.Event == "" || record.Event == "INSERT" {
+	if record.OpType == "" || record.OpType == "INSERT" {
 		merged := maputil.Merge(record.Default, upsert)
 		query.Create(merged)
 	} else {
@@ -114,10 +114,10 @@ func (self *MySQLEngine) Select(skma *schema.Input, records []*respond.Record) e
 	for i := 0; i < size; i++ {
 		record := records[i]
 		if value, ok := result[record.UUKey]; ok {
-			record.Event = "UPDATE"
+			record.OpType = "UPDATE"
 			record.Storage = record.Decode(skma, value)
 		} else {
-			record.Event = "INSERT"
+			record.OpType = "INSERT"
 			record.Storage = record.Default
 		}
 		record.Objects = record.ToObjects(skma, record.Request)

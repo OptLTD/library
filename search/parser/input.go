@@ -72,15 +72,40 @@ func (self *InputParser) Build(value *source.Value, request *request.Record) (an
 		Others: others,
 	}
 
+	if input != nil {
+		self.applyPreset(input)
+		applyFieldViewPatch(
+			self.schema.Fields,
+			viewObject(input.Rename),
+			viewObject(input.Replace),
+		)
+	}
+
 	for _, handle := range self.handles {
 		handle.InputSchema(self.schema)
 	}
 	return self.schema, nil
 }
 
+func (self *InputParser) applyPreset(input *source.Input) {
+	if input == nil || len(input.Preset) == 0 {
+		return
+	}
+	if self.request.UUKey != "" {
+		return
+	}
+	if self.request.Value == nil {
+		self.request.Value = map[string]any{}
+	}
+	for key, val := range input.Preset {
+		if _, ok := self.request.Value[key]; !ok {
+			self.request.Value[key] = val
+		}
+	}
+}
+
 func (self *InputParser) PrepareReq(req *request.Record) *request.Record {
 	req.Using = support.Or(req.Using, "default")
-	req.SyncOpType()
 	return req
 }
 func (self *InputParser) BuildModel() *source.Model {
@@ -128,30 +153,16 @@ func (self *InputParser) BuildClicks(input *source.Input) []source.Click {
 	clicks := self.source.Clicks
 	result := []source.Click{}
 
-	// [NAME][*] => 从 source.Clicks 中收集所有以 [NAME] 为前缀的 key，作为展开结果
-	var expandedKeys []string
-	for _, key := range input.Clicks {
-		if !strings.HasSuffix(key, "[*]") {
-			expandedKeys = append(expandedKeys, key)
-			continue
-		}
-
-		var matched []string
-		prefix := strings.TrimSuffix(key, "[*]")
-		for mapKey := range clicks {
-			if strings.HasPrefix(mapKey, prefix) {
-				matched = append(matched, mapKey)
-			}
-		}
-		expandedKeys = append(expandedKeys, matched...)
-	}
-	reqScene := self.request.GetOpType()
+	reqScene := self.request.Scene
 	switch reqScene {
 	case consts.ACTION_UPDATE:
 		reqScene = consts.SCENE_INPUT
 	case consts.ACTION_INSERT:
 		reqScene = consts.SCENE_INPUT
 	}
+	var expandedKeys = ExpandClicks(
+		input.Clicks, maputil.Keys(clicks),
+	)
 	for _, key := range expandedKeys {
 		if act, ok := clicks[key]; ok {
 			act.CType = strings.ToUpper(act.CType)
@@ -199,20 +210,31 @@ func (self *InputParser) CheckShown(field source.Field, input *source.Input) str
 	if field.Extra.Implicit {
 		return consts.VISIBLE_HIDE
 	}
-	if len(input.Fields) == 0 {
+	visible, hidden := false, false
+	if len(input.Fields) == 0 && len(input.Hidden) == 0 {
 		return consts.VISIBLE_SHOW
+	} else if len(input.Fields) == 0 {
+		visible = true
 	}
-	if slice.Contain(input.Fields, "*") {
-		return consts.VISIBLE_SHOW
-	}
-
-	visible := false
 	for _, item := range input.Fields {
 		matched, err := regexp.Match(item, []byte(field.UUKey))
-		if err != nil || matched == false {
+		if err != nil || !matched {
 			continue
 		}
 		visible = true
 	}
-	return support.If(visible, consts.VISIBLE_SHOW, consts.VISIBLE_HIDE)
+	if slice.Contain(input.Fields, ".*") {
+		visible = true
+	}
+	for _, item := range input.Hidden {
+		matched, err := regexp.Match(item, []byte(field.UUKey))
+		if err != nil || !matched {
+			continue
+		}
+		hidden = true
+	}
+	if !visible || hidden {
+		return consts.VISIBLE_HIDE
+	}
+	return consts.VISIBLE_SHOW
 }

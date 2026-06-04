@@ -76,6 +76,14 @@ func (self *TableParser) Build(value *source.Value, request *request.Search) (*s
 		Account: request.Login, Refers: refers, Clicks: clicks,
 	}
 
+	if table != nil {
+		applyFieldViewPatch(
+			self.schema.Fields,
+			viewObject(table.Rename),
+			viewObject(table.Replace),
+		)
+	}
+
 	for _, handle := range self.handles {
 		handle.SearchSchema(self.schema)
 	}
@@ -139,23 +147,9 @@ func (self *TableParser) BuildClicks(table *source.Table) []source.Click {
 	clicks := self.source.Clicks
 	result := []source.Click{}
 
-	// [NAME][*] => 从 source.Clicks 中收集所有以 [NAME] 为前缀的 key，作为展开结果
-	var expandedKeys []string
-	for _, key := range table.Clicks {
-		if !strings.HasSuffix(key, "[*]") {
-			expandedKeys = append(expandedKeys, key)
-			continue
-		}
-
-		var matched []string
-		prefix := strings.TrimSuffix(key, "[*]")
-		for mapKey := range clicks {
-			if strings.HasPrefix(mapKey, prefix) {
-				matched = append(matched, mapKey)
-			}
-		}
-		expandedKeys = append(expandedKeys, matched...)
-	}
+	var expandedKeys = ExpandClicks(
+		table.Clicks, maputil.Keys(clicks),
+	)
 	for _, key := range expandedKeys {
 		if act, ok := clicks[key]; ok {
 			act.CType = strings.ToUpper(act.CType)
