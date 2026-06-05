@@ -41,7 +41,7 @@ func ParseNumber(val any) float64 {
 }
 
 func IsInvalidUUKey(key string) bool {
-	matcher := regexp.MustCompile(`^[0-9a-zA-Z\-\_]+$`)
+	matcher := regexp.MustCompile(`^[0-9a-zA-Z\-\_\.]+$`)
 	return matcher.MatchString(key) == false
 }
 
