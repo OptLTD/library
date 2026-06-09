@@ -600,14 +600,26 @@ func (self *MongoEngine) buildQuery(logic string, queries *[]schema.Query, skma 
 		if field.GType == consts.GTYPE_FLATTEN {
 			query.Field = field.Field
 		}
-		// 数值类型转换为浮点数
+		// 数值类型：比较运算符需保留 0；EQ 等仍走 field.Parse（0 视为空）
 		if field.FType == consts.FTYPE_NUMERIC {
-			query.Value = field.Parse(query.Value)
+			switch strings.ToUpper(query.Logic) {
+			case consts.LOGIC_GREATER, consts.LOGIC_GRAT_EQ,
+				consts.LOGIC_LESTHAN, consts.LOGIC_LESS_EQ:
+				if n, ok := support.CoerceNumber(query.Value); ok {
+					query.Value = n
+				} else {
+					continue
+				}
+			default:
+				query.Value = field.Parse(query.Value)
+			}
 		}
 
 		expr := bson.M{}
 		switch strings.ToUpper(query.Logic) {
 		case consts.LOGIC_EQUALSTO:
+			expr[query.Field] = query.Value
+		case consts.LOGIC_MY_SCOPE:
 			expr[query.Field] = query.Value
 		case consts.LOGIC_NOTEQUAL:
 			expr[query.Field] = bson.M{"$ne": query.Value}

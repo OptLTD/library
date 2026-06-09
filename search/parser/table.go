@@ -46,7 +46,7 @@ func (self *TableParser) Build(value *source.Value, request *request.Search) (*s
 		}
 	}
 	if table == nil && !match {
-		clicks := []string{"[SETUP][*]"}
+		clicks := []string{}
 		table = &source.Table{Clicks: clicks}
 		keys := maputil.Keys(value.Tables)
 		support.LogDebugf(self.request.LogID,

@@ -46,7 +46,7 @@ func (self *InputParser) Build(value *source.Value, request *request.Record) (an
 		}
 	}
 	if input == nil && !match {
-		clicks := []string{"[SETUP][*]"}
+		clicks := []string{}
 		input = &source.Input{Clicks: clicks}
 		keys := maputil.Keys(value.Inputs)
 		support.LogWarnf(self.request.LogID,

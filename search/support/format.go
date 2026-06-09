@@ -40,6 +40,41 @@ func ParseNumber(val any) float64 {
 	return num
 }
 
+// CoerceNumber 将查询条件中的数值字面量转为 float64；
+// 0 为合法值（用于 GT/GTE 等比较）；其他字符串转为浮点数。
+func CoerceNumber(val any) (float64, bool) {
+	if val == nil {
+		return 0, false
+	}
+	switch v := val.(type) {
+	case int:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint:
+		return float64(v), true
+	case uint32:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case float32:
+		return float64(v), true
+	case float64:
+		return v, true
+	case string:
+		s := strings.TrimSpace(strings.ReplaceAll(v, ",", ""))
+		if s == "" {
+			return 0, false
+		}
+		f, err := strconv.ParseFloat(s, 64)
+		return f, err == nil
+	default:
+		return 0, false
+	}
+}
+
 func IsInvalidUUKey(key string) bool {
 	matcher := regexp.MustCompile(`^[0-9a-zA-Z\-\_\.]+$`)
 	return matcher.MatchString(key) == false

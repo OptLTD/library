@@ -26,6 +26,9 @@ const (
 	LOGIC_VAL_NULL = "NIL"
 	LOGIC_NOT_NULL = "NNL"
 
+	// 自己可见
+	LOGIC_MY_SCOPE = "MYS"
+
 	// 结构
 	LOGIC_EXISTS = "EXISTS"
 	LOGIC_NESTED = "NESTED"

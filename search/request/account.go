@@ -14,6 +14,7 @@ type Account struct {
 	UUID any `json:"uuid"`
 	Team any `json:"team"`
 	Corp any `json:"corp"`
+	Sign any `json:"sign"`
 }
 
 func NewAccount(user map[string]any) *Account {
@@ -30,6 +31,11 @@ func NewAccount(user map[string]any) *Account {
 			acc.Team = val
 		case "corp_id":
 			acc.Corp = val
+		}
+	}
+	if src, ok := user["source"].(map[string]any); ok {
+		if sign, ok := src["UUKey"].(string); ok {
+			acc.Sign = sign
 		}
 	}
 	return acc

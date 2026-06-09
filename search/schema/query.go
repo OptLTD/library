@@ -114,6 +114,11 @@ func BuildPreset(requst map[string]any, skma *Table) map[string]any {
 			}
 			continue
 		}
+		// 特殊处理:自己可见
+		if logic == consts.LOGIC_MY_SCOPE {
+			query[key] = skma.Account.Sign
+			continue
+		}
 
 		var termField *Field
 		if field := skma.GetField(uukey); field == nil {
