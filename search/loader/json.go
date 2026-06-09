@@ -41,7 +41,7 @@ func (self *JSONLoader) Load(ctx context.Context, name string) (*source.Value, e
 		return nil, support.ConfigNotExsit
 	}
 
-	value, err := self.parseSource(name, configParse)
+	value, err := self.loadSchemaWithExtends(ctx, self, name, configParse)
 	if err != nil {
 		return value, err
 	}
@@ -218,9 +218,8 @@ func (self *JSONLoader) parseTables(tablesParse string) map[string]source.Table 
 		if err := json.Unmarshal(value, &table); err != nil {
 			return err
 		}
-		if table.UUKey == "" {
-			table.UUKey = string(key)
-		}
+		// 外层 key 即视图 uukey，与 route.json views[].uukey 对应
+		table.UUKey = string(key)
 		if len(table.Query) > 0 {
 			table.Query = support.NormalizeQueryObject(table.Query)
 		}
@@ -237,9 +236,7 @@ func (self *JSONLoader) parseInputs(inputsParse string) map[string]source.Input 
 		if err := json.Unmarshal(value, &input); err != nil {
 			return err
 		}
-		if input.UUKey == "" {
-			input.UUKey = string(key)
-		}
+		input.UUKey = string(key)
 		inputs[string(key)] = input
 		return nil
 	})

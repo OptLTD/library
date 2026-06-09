@@ -91,10 +91,11 @@ func (self *MySQLLoader) Load(ctx context.Context, model string) (*source.Value,
 		support.LogDebugf(logID, "Load %s tables: %s", model, keys)
 	}
 
-	return &source.Value{
+	value := &source.Value{
 		Model: *detail, Fields: fields, Groups: groups,
 		Tables: tables, Inputs: inputs, Clicks: clicks,
-	}, nil
+	}
+	return ResolveExtends(ctx, self, model, value)
 }
 
 func (self *MySQLLoader) getModel(where map[string]any) (*source.Model, error) {

@@ -6,6 +6,7 @@ import (
 
 var EntryNotExsit = fmt.Errorf("Load Error: %s", "EntryNotExsit")
 var ConfigNotExsit = fmt.Errorf("Load Error: %s", "ConfigNotExsit")
+var ExtendsCycle = fmt.Errorf("Load Error: %s", "ExtendsCycle")
 var ErrorConfigClient = fmt.Errorf("Load Error: %s", "ErrorConfigClient")
 var ErrorConfigFields = fmt.Errorf("Load Error: %s", "ErrorConfigFields")
 var ErrorConfigTables = fmt.Errorf("Load Error: %s", "ErrorConfigTables")

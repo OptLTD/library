@@ -3,7 +3,6 @@ package loader
 import (
 	"context"
 	"embed"
-	"fmt"
 	"github.com/OptLTD/library/search/consts"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
@@ -11,6 +10,12 @@ import (
 
 	parser "github.com/buger/jsonparser"
 )
+
+func joinEmbedPath(base, rel string) string {
+	base = strings.TrimSuffix(strings.Trim(base, "/"), "/")
+	rel = strings.TrimPrefix(strings.Trim(rel, "/"), "/")
+	return base + "/" + rel
+}
 
 type EmbedLoader struct {
 	JSONLoader
@@ -36,7 +41,7 @@ func (self *EmbedLoader) Load(ctx context.Context, name string) (*source.Value, 
 	if base := GetBase(ctx); base != "" {
 		self.base = strings.Trim(base, "/")
 	}
-	file := fmt.Sprint(self.base, "/", ENTRY_JSON)
+	file := joinEmbedPath(self.base, ENTRY_JSON)
 	strValue, err := self.fs.ReadFile(file)
 	if err != nil {
 		return nil, support.EntryNotExsit
@@ -48,7 +53,7 @@ func (self *EmbedLoader) Load(ctx context.Context, name string) (*source.Value, 
 		return nil, support.ConfigNotExsit
 	}
 
-	source, err := self.parseSource(name, config)
+	source, err := self.JSONLoader.loadSchemaWithExtends(ctx, self, name, config)
 	if err != nil {
 		return source, err
 	}
@@ -75,7 +80,7 @@ func (self *EmbedLoader) Load(ctx context.Context, name string) (*source.Value, 
 }
 
 func (self *EmbedLoader) getEntry(entry string) (string, error) {
-	file := fmt.Sprint(self.base, "/", entry)
+	file := joinEmbedPath(self.base, entry)
 	strValue, err := self.fs.ReadFile(file)
 	if err != nil {
 		return "", support.EntryNotExsit
@@ -90,7 +95,7 @@ func (self *EmbedLoader) loadFile(value string, name string, part string) (strin
 		return "", err
 	}
 
-	file = fmt.Sprint(self.base, "/", file)
+	file = joinEmbedPath(self.base, file)
 	if json, err := self.fs.ReadFile(file); err != nil {
 		return "", err
 	} else {
