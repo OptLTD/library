@@ -224,6 +224,9 @@ func BuildPreset(requst map[string]any, skma *Table) map[string]any {
 			case "RECENT_1_MONTH":
 				start = start.AddDate(0, -1, 0)
 				finish = finish.AddDate(0, 0, 1)
+			case "RECENT_2_MONTH":
+				start = start.AddDate(0, -2, 0)
+				finish = finish.AddDate(0, 0, 1)
 			case "RECENT_3_MONTH":
 				start = start.AddDate(0, -3, 0)
 				finish = finish.AddDate(0, 0, 1)
@@ -236,6 +239,8 @@ func BuildPreset(requst map[string]any, skma *Table) map[string]any {
 				finish = finish.AddDate(0, 0, 14)
 			case "FUTURE_1_MONTH":
 				finish = finish.AddDate(0, 1, 0)
+			case "FUTURE_2_MONTH":
+				finish = finish.AddDate(0, 2, 0)
 			case "FUTURE_3_MONTH":
 				finish = finish.AddDate(0, 3, 0)
 			case "FUTURE_6_MONTH":

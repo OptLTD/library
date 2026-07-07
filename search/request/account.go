@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+const (
+	USER_STATE_NORMAL = 0
+	// user state
+	USER_STATE_LOCKED = 11
+	// corp state
+	CORP_STATE_LACKING  = 20
+	CORP_STATE_EXPIRED  = 21
+	CORP_STATE_DISABLED = 22
+)
+
 type Account struct {
 	Lang string `json:"lang"`
 	Name string `json:"name"`
@@ -15,6 +25,9 @@ type Account struct {
 	Team any `json:"team"`
 	Corp any `json:"corp"`
 	Sign any `json:"sign"`
+
+	// 账号状态
+	State uint `json:"state"`
 }
 
 func NewAccount(user map[string]any) *Account {
