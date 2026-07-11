@@ -6,7 +6,7 @@ Go 多 module monorepo，为 [superuser-api](https://github.com/OptLTD) 等业�
 
 ### [search](search/README.md) — 检索与数据模型引擎
 
-将模型、字段、分组配置解析为统一查询，对接 MySQL / MongoDB / Elasticsearch / 内存存储。
+将模型、字段、分组配置解析为统一查询，对接 MySQL / MongoDB / Elasticsearch / 内存存储。数据库驱动按需引入，见 [search/MIGRATION.md](search/MIGRATION.md)。
 
 ```go
 import (
@@ -71,6 +71,7 @@ length, _ := js.RunString(ctx, `new TextEncoder().encode("你好").length`)
 ## 文档
 
 - [deploy.md](deploy.md) — 发布流程、`go get` 引用方式
+- [search/MIGRATION.md](search/MIGRATION.md) — search v0.1.x → v0.2.x 升级指南
 - 各模块详细说明见对应目录下的 `README.md`
 
 ## License

@@ -1,14 +1,15 @@
-package engine
+package mysql
 
 import (
 	"fmt"
 	"log"
+	"strings"
+
 	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/engine"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
-	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -16,21 +17,27 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type MySQLEngine struct {
+type Engine struct {
 	client  *gorm.DB
-	handles []ICallable
+	handles []engine.ICallable
 }
 
-func (self *MySQLEngine) Using(handle ICallable) IEngine {
-	if self.handles == nil {
-		self.handles = []ICallable{}
+func NewEngine(db *gorm.DB) engine.IEngine {
+	session := &gorm.Session{QueryFields: true}
+	return &Engine{
+		client: db.Session(session),
 	}
+}
 
+func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
+	if self.handles == nil {
+		self.handles = []engine.ICallable{}
+	}
 	self.handles = append(self.handles, handle)
 	return self
 }
 
-func (self *MySQLEngine) First(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) First(skma *schema.Input, record *respond.Record) error {
 	table := skma.Model.Source
 	where := map[string]any{
 		"uukey": record.UUKey,
@@ -55,12 +62,10 @@ func (self *MySQLEngine) First(skma *schema.Input, record *respond.Record) error
 	return nil
 }
 
-func (self *MySQLEngine) Store(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) Store(skma *schema.Input, record *respond.Record) error {
 	table := skma.Model.Source
-	// 处理回掉
 	for _, handle := range self.handles {
-		err := handle.BeforeUpsert(skma, record)
-		if err != nil {
+		if err := handle.BeforeUpsert(skma, record); err != nil {
 			return err
 		}
 	}
@@ -79,17 +84,15 @@ func (self *MySQLEngine) Store(skma *schema.Input, record *respond.Record) error
 	} else {
 		query.Updates(upsert)
 	}
-	// 处理回掉
 	for _, handle := range self.handles {
-		err := handle.HandleUpsert(skma, record)
-		if err != nil {
+		if err := handle.HandleUpsert(skma, record); err != nil {
 			break
 		}
 	}
 	return nil
 }
 
-func (self *MySQLEngine) Select(skma *schema.Input, records []*respond.Record) error {
+func (self *Engine) Select(skma *schema.Input, records []*respond.Record) error {
 	table := skma.Model.Source
 	uukeys, size := []any{}, len(records)
 	for i := 0; i < size; i++ {
@@ -128,29 +131,25 @@ func (self *MySQLEngine) Select(skma *schema.Input, records []*respond.Record) e
 	return nil
 }
 
-func (self *MySQLEngine) Upsert(skma *schema.Input, records []*respond.Record) error {
+func (self *Engine) Upsert(skma *schema.Input, records []*respond.Record) error {
 	table := skma.Model.Source
 	values := []map[string]any{}
 	size := len(records)
 
-	// 处理回掉
 	for _, handle := range self.handles {
 		for i := 0; i < size; i++ {
-			err := handle.BeforeUpsert(skma, records[i])
-			if err != nil {
+			if err := handle.BeforeUpsert(skma, records[i]); err != nil {
 				return err
 			}
 		}
 	}
 
-	fields := []string{} // "utime"
+	fields := []string{}
 	for i := 0; i < size; i++ {
 		record := records[i]
 		value := record.Encode(skma, record.Prepare)
 		values = append(values, value)
-
-		change := record.Changes
-		fields = append(fields, maputil.Keys(change)...)
+		fields = append(fields, maputil.Keys(record.Changes)...)
 	}
 	fields = slice.Unique(fields)
 	query := self.client.Table(table).
@@ -159,11 +158,9 @@ func (self *MySQLEngine) Upsert(skma *schema.Input, records []*respond.Record) e
 			DoUpdates: clause.AssignmentColumns(fields),
 		}).
 		CreateInBatches(values, 100)
-		// 处理回掉
 	for _, handle := range self.handles {
 		for i := 0; i < size; i++ {
-			err := handle.HandleUpsert(skma, records[i])
-			if err != nil {
+			if err := handle.HandleUpsert(skma, records[i]); err != nil {
 				break
 			}
 		}
@@ -171,13 +168,10 @@ func (self *MySQLEngine) Upsert(skma *schema.Input, records []*respond.Record) e
 	return query.Error
 }
 
-func (self *MySQLEngine) Update(skma *schema.Input, data map[string]any) error {
-	// 检查 Scope 是否为空
+func (self *Engine) Update(skma *schema.Input, data map[string]any) error {
 	if len(skma.Scope) == 0 {
 		return fmt.Errorf("update scope cannot be empty")
 	}
-
-	// 检查是否包含有效的 corp_id
 	id, has := skma.Scope[consts.FIELD_CORP_ID]
 	if !has || support.Bool(id) == false {
 		return fmt.Errorf("update scope must contain corp_id")
@@ -187,7 +181,6 @@ func (self *MySQLEngine) Update(skma *schema.Input, data map[string]any) error {
 	mergedQuery, _ := schema.BuildQuery(skma.Scope)
 	parsedQuery := self.buildQuery(consts.LOGIC_SUBAND, &mergedQuery)
 
-	// 更新前先 count，超过 1000 条则阻止
 	var count int64
 	countQuery := self.client.Table(table).Clauses(parsedQuery...)
 	if err := countQuery.Count(&count).Error; err != nil {
@@ -201,7 +194,7 @@ func (self *MySQLEngine) Update(skma *schema.Input, data map[string]any) error {
 	return query.Error
 }
 
-func (self *MySQLEngine) Search(skma *schema.Table) (*respond.Result, error) {
+func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 	request := skma.Request
 	merged := skma.BuildQuery()
 	queries := self.buildQuery(consts.LOGIC_SUBAND, &merged)
@@ -217,33 +210,19 @@ func (self *MySQLEngine) Search(skma *schema.Table) (*respond.Result, error) {
 		Page: request.Page, Count: uint64(count),
 		Size: request.Size, Values: values,
 	}
-
-	// 处理回掉
 	for _, h := range self.handles {
-		err := h.SearchResult(skma, result)
-		if err != nil {
+		if err := h.SearchResult(skma, result); err != nil {
 			log.Println("handle result err:", err)
 		}
 	}
 	return result, nil
 }
 
-func (self *MySQLEngine) Digest(skma *schema.Digest) (*respond.Result, error) {
+func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	return self.Search(skma.Table)
 }
 
-func (self *MySQLEngine) buildField(fields *[]source.Field) string {
-	if fields == nil || len(*fields) == 0 {
-		return "*"
-	}
-	slices := []string{}
-	for _, field := range *fields {
-		slices = append(slices, field.Field)
-	}
-	return strings.Join(slices, ",")
-}
-
-func (self *MySQLEngine) buildQuery(logic string, queries *[]schema.Query) []clause.Expression {
+func (self *Engine) buildQuery(logic string, queries *[]schema.Query) []clause.Expression {
 	result := []clause.Expression{}
 	for _, query := range *queries {
 		if strings.HasPrefix(query.Field, "basic.") {
@@ -278,8 +257,6 @@ func (self *MySQLEngine) buildQuery(logic string, queries *[]schema.Query) []cla
 			result = append(result, clause.And(self.buildQuery(consts.LOGIC_SUBAND, query.Items)...))
 		case consts.LOGIC_SUBNOT:
 			result = append(result, clause.Not(self.buildQuery(consts.LOGIC_SUBNOT, query.Items)...))
-		default:
-			// 异常逻辑
 		}
 	}
 	if len(result) == 0 {

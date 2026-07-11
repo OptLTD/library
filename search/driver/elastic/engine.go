@@ -1,4 +1,4 @@
-package engine
+package elastic
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"log"
 	"runtime"
 	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/engine"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
@@ -25,25 +26,29 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type ElasticEngine struct {
-	handles []ICallable
+func NewEngine(client *elasticsearch.Client) engine.IEngine {
+	return &Engine{client: client}
+}
+
+type Engine struct {
+	handles []engine.ICallable
 	client  *elasticsearch.Client
 }
 
-func (self *ElasticEngine) Using(handle ICallable) IEngine {
+func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
 	if self.handles == nil {
-		self.handles = []ICallable{}
+		self.handles = []engine.ICallable{}
 	}
 
 	self.handles = append(self.handles, handle)
 	return self
 }
 
-func (self *ElasticEngine) First(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) First(skma *schema.Input, record *respond.Record) error {
 	return nil
 }
 
-func (self *ElasticEngine) Store(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) Store(skma *schema.Input, record *respond.Record) error {
 	// Build the request body.
 	data, err := json.Marshal(record.Storage)
 	if err != nil {
@@ -90,7 +95,7 @@ func (self *ElasticEngine) Store(skma *schema.Input, record *respond.Record) err
 	return nil
 }
 
-func (self *ElasticEngine) Upsert(skma *schema.Input, records []*respond.Record) error {
+func (self *Engine) Upsert(skma *schema.Input, records []*respond.Record) error {
 	size := len(records)
 	if size == 0 {
 		return support.UpsertEmptyRecord
@@ -177,11 +182,11 @@ func (self *ElasticEngine) Upsert(skma *schema.Input, records []*respond.Record)
 	return nil
 }
 
-func (self *ElasticEngine) Select(schema *schema.Input, record []*respond.Record) error {
+func (self *Engine) Select(schema *schema.Input, record []*respond.Record) error {
 	return nil
 }
 
-func (self *ElasticEngine) Update(skma *schema.Input, data map[string]any) error {
+func (self *Engine) Update(skma *schema.Input, data map[string]any) error {
 	// 检查 Scope 是否为空
 	if len(skma.Scope) == 0 {
 		return fmt.Errorf("update scope cannot be empty")
@@ -284,7 +289,7 @@ func (self *ElasticEngine) Update(skma *schema.Input, data map[string]any) error
 	return nil
 }
 
-func (self *ElasticEngine) Search(skma *schema.Table) (*respond.Result, error) {
+func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 	aggrs := self.buildBasic(skma, "")
 	// 分桶聚合
 	pivot := skma.BuildDigest()
@@ -420,7 +425,7 @@ func (self *ElasticEngine) Search(skma *schema.Table) (*respond.Result, error) {
 	return result, nil
 }
 
-func (self *ElasticEngine) Digest(skma *schema.Digest) (*respond.Result, error) {
+func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	meta := skma.Table.BuildDigest()
 	pivot := slice.Map(meta.GroupBy, func(_ int, g source.GroupBy) string {
 		return g.Index
@@ -492,7 +497,7 @@ func (self *ElasticEngine) Digest(skma *schema.Digest) (*respond.Result, error) 
 	return result, nil
 }
 
-func (self *ElasticEngine) expandTotals(tokens []string, totals map[string]any) []map[string]any {
+func (self *Engine) expandTotals(tokens []string, totals map[string]any) []map[string]any {
 	if len(tokens) == 0 || len(totals) == 0 {
 		return []map[string]any{}
 	}
@@ -523,7 +528,7 @@ func (self *ElasticEngine) expandTotals(tokens []string, totals map[string]any) 
 	return values
 }
 
-func (self *ElasticEngine) buildField(fields *[]source.Field) []string {
+func (self *Engine) buildField(fields *[]source.Field) []string {
 	if len(*fields) == 0 {
 		return []string{"*"}
 	}
@@ -534,7 +539,7 @@ func (self *ElasticEngine) buildField(fields *[]source.Field) []string {
 	return slices
 }
 
-func (self *ElasticEngine) buildQuery(logic string, queries *[]schema.Query) map[string]any {
+func (self *Engine) buildQuery(logic string, queries *[]schema.Query) map[string]any {
 	result := []map[string]any{}
 	for _, query := range *queries {
 		var where map[string]any
@@ -622,7 +627,7 @@ func (self *ElasticEngine) buildQuery(logic string, queries *[]schema.Query) map
 	return map[string]any{}
 }
 
-func (self *ElasticEngine) buildBasic(skma *schema.Table, nested string) []source.CountFn {
+func (self *Engine) buildBasic(skma *schema.Table, nested string) []source.CountFn {
 	totals := []source.CountFn{}
 	if nested == "" {
 		for _, group := range skma.Groups {
@@ -685,7 +690,7 @@ func (self *ElasticEngine) buildBasic(skma *schema.Table, nested string) []sourc
 	}
 	return totals
 }
-func (self *ElasticEngine) buildAggrs(totals []source.CountFn) map[string]any {
+func (self *Engine) buildAggrs(totals []source.CountFn) map[string]any {
 	result := map[string]any{}
 	if len(totals) == 0 {
 		return result
@@ -768,7 +773,7 @@ func (self *ElasticEngine) buildAggrs(totals []source.CountFn) map[string]any {
 	return result
 }
 
-func (self *ElasticEngine) decodeAggrs(values map[string]any, totals []source.CountFn) map[string]any {
+func (self *Engine) decodeAggrs(values map[string]any, totals []source.CountFn) map[string]any {
 	result := map[string]any{}
 	if len(totals) == 0 {
 		return result

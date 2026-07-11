@@ -1,4 +1,4 @@
-package engine
+package mongo
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/engine"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
@@ -23,11 +24,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoEngine struct {
+func NewEngine(db *mongo.Database) engine.IEngine {
+	return &Engine{client: db}
+}
+
+type Engine struct {
 	debug bool
 
 	client  *mongo.Database
-	handles []ICallable
+	handles []engine.ICallable
 }
 
 // aggrStage 封装 MongoDB 聚合管道的各个阶段配置
@@ -37,16 +42,16 @@ type aggrStage struct {
 	Unique  bson.M // $addFields 阶段的去重计数计算（用于 VALUE_UNQ）
 }
 
-func (self *MongoEngine) Using(handle ICallable) IEngine {
+func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
 	if self.handles == nil {
-		self.handles = []ICallable{}
+		self.handles = []engine.ICallable{}
 	}
 
 	self.handles = append(self.handles, handle)
 	return self
 }
 
-func (self *MongoEngine) First(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) First(skma *schema.Input, record *respond.Record) error {
 	logID := skma.Request.LogID
 	table := skma.Model.Source
 	where := map[string]any{
@@ -76,7 +81,7 @@ func (self *MongoEngine) First(skma *schema.Input, record *respond.Record) error
 	return nil
 }
 
-func (self *MongoEngine) Store(skma *schema.Input, record *respond.Record) error {
+func (self *Engine) Store(skma *schema.Input, record *respond.Record) error {
 	table := skma.Model.Source
 	// 处理回掉
 	for _, handle := range self.handles {
@@ -131,7 +136,7 @@ func (self *MongoEngine) Store(skma *schema.Input, record *respond.Record) error
 	return nil
 }
 
-func (self *MongoEngine) Select(skma *schema.Input, records []*respond.Record) error {
+func (self *Engine) Select(skma *schema.Input, records []*respond.Record) error {
 	logID := skma.Request.LogID
 	table := skma.Model.Source
 	uukeys, size := []any{}, len(records)
@@ -173,7 +178,7 @@ func (self *MongoEngine) Select(skma *schema.Input, records []*respond.Record) e
 	return nil
 }
 
-func (self *MongoEngine) Upsert(skma *schema.Input, records []*respond.Record) error {
+func (self *Engine) Upsert(skma *schema.Input, records []*respond.Record) error {
 	table, size := skma.Model.Source, len(records)
 	// 处理回掉
 	for _, handle := range self.handles {
@@ -222,7 +227,7 @@ func (self *MongoEngine) Upsert(skma *schema.Input, records []*respond.Record) e
 	return nil
 }
 
-func (self *MongoEngine) Update(skma *schema.Input, data map[string]any) error {
+func (self *Engine) Update(skma *schema.Input, data map[string]any) error {
 	// 检查 Scope 是否为空
 	if len(skma.Scope) == 0 {
 		return fmt.Errorf("update scope cannot be empty")
@@ -273,7 +278,7 @@ func (self *MongoEngine) Update(skma *schema.Input, data map[string]any) error {
 	return err
 }
 
-func (self *MongoEngine) Search(skma *schema.Table) (*respond.Result, error) {
+func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 	skma = self.resetTable(skma)
 	request, table := skma.Request, skma.Model.Source
 	logID := support.Or(request.LogID, "unknown")
@@ -348,7 +353,7 @@ func (self *MongoEngine) Search(skma *schema.Table) (*respond.Result, error) {
 	return result, nil
 }
 
-func (self *MongoEngine) Digest(skma *schema.Digest) (*respond.Result, error) {
+func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	self.resetPivot(skma)
 
 	// 分桶聚合
@@ -526,7 +531,7 @@ func (self *MongoEngine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	return result, nil
 }
 
-func (self *MongoEngine) inputToTable(input *schema.Input) *schema.Table {
+func (self *Engine) inputToTable(input *schema.Input) *schema.Table {
 	table := &schema.Table{Model: input.Model}
 	convertor.CopyProperties(table, input)
 	// 复制源数据, 防止字段丢失的问题
@@ -534,7 +539,7 @@ func (self *MongoEngine) inputToTable(input *schema.Input) *schema.Table {
 	return table
 }
 
-func (self *MongoEngine) resetTable(skma *schema.Table) *schema.Table {
+func (self *Engine) resetTable(skma *schema.Table) *schema.Table {
 	if len(skma.Fields) == 0 {
 		return skma
 	}
@@ -549,7 +554,7 @@ func (self *MongoEngine) resetTable(skma *schema.Table) *schema.Table {
 	return clone
 }
 
-func (self *MongoEngine) resetPivot(skm *schema.Digest) *schema.Digest {
+func (self *Engine) resetPivot(skm *schema.Digest) *schema.Digest {
 	skm.Table = self.resetTable(skm.Table)
 	// 强制显示 digest 取值字段
 	if skm.PivotBy == nil {
@@ -573,7 +578,7 @@ func (self *MongoEngine) resetPivot(skm *schema.Digest) *schema.Digest {
 	return skm
 }
 
-func (self *MongoEngine) buildQuery(logic string, queries *[]schema.Query, skma *schema.Table) bson.M {
+func (self *Engine) buildQuery(logic string, queries *[]schema.Query, skma *schema.Table) bson.M {
 	if queries == nil || len(*queries) == 0 {
 		return bson.M{}
 	}
@@ -687,7 +692,7 @@ func (self *MongoEngine) buildQuery(logic string, queries *[]schema.Query, skma 
 	return bson.M{"$and": clauses}
 }
 
-func (self *MongoEngine) getGroupBy(skma *schema.Digest) []source.GroupBy {
+func (self *Engine) getGroupBy(skma *schema.Digest) []source.GroupBy {
 	groups, keys := []source.GroupBy{}, []string{}
 	if schema.PivotByActive(skma.PivotBy) {
 		pivotIdx := skma.PivotBy.Pivot
@@ -712,7 +717,7 @@ func (self *MongoEngine) getGroupBy(skma *schema.Digest) []source.GroupBy {
 	return groups
 }
 
-func (self *MongoEngine) getAggrs(skma *schema.Digest, nested string) []source.CountFn {
+func (self *Engine) getAggrs(skma *schema.Digest, nested string) []source.CountFn {
 	totals := []source.CountFn{}
 	scene := skma.Table.Request.Scene
 	if scene == consts.SCENE_SEARCH {
@@ -826,7 +831,7 @@ func (self *MongoEngine) getAggrs(skma *schema.Digest, nested string) []source.C
 }
 
 // totals to group by and count(1),sum(1)...
-func (self *MongoEngine) buildCountFn(totals []source.CountFn) aggrStage {
+func (self *Engine) buildCountFn(totals []source.CountFn) aggrStage {
 	stages := aggrStage{
 		Group:   bson.M{},
 		Unique:  bson.M{},
@@ -899,7 +904,7 @@ func (self *MongoEngine) buildCountFn(totals []source.CountFn) aggrStage {
 
 	return stages
 }
-func (self *MongoEngine) buildGroupBy(totals []source.CountFn) bson.M {
+func (self *Engine) buildGroupBy(totals []source.CountFn) bson.M {
 	group := bson.M{}
 	if len(totals) == 0 {
 		return group

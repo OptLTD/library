@@ -24,10 +24,6 @@ type ILoader interface {
 
 func NewLoader(name string) ILoader {
 	switch strings.ToUpper(name) {
-	case consts.LOADER_MYSQL:
-		return &MySQLLoader{}
-	case consts.LOADER_MONGO:
-		return &MongoLoader{}
 	case consts.LOADER_EMBED:
 		return &EmbedLoader{}
 	case consts.LOADER_JSON:

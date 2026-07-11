@@ -6,4 +6,8 @@ use (
 	./jsmodule
 	./jsrunner
 	./search
+	./search/driver/elastic
+	./search/driver/mongo
+	./search/driver/mysql
+	./search/driver/redis
 )

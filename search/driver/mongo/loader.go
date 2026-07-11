@@ -1,13 +1,15 @@
-package loader
+package mongo
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/source"
-	"github.com/OptLTD/library/search/support"
 	"strings"
 	"time"
+
+	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/loader"
+	"github.com/OptLTD/library/search/source"
+	"github.com/OptLTD/library/search/support"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
@@ -15,39 +17,26 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MongoLoader struct {
+func NewLoader(db *mongo.Database, tables *loader.SchemaTableName) loader.ILoader {
+	return &Loader{client: db, tables: tables}
+}
+
+type Loader struct {
 	client *mongo.Database
-	tables *SchemaTableName
+	tables *loader.SchemaTableName
 }
 
-func (self *MongoLoader) Init() error {
-	value, ok := support.GetValue(consts.DATABASE_MONGO)
-	if !ok || !support.Bool(value) {
-		return support.ErrorConfigClient
+func (self *Loader) Load(ctx context.Context, model string) (*source.Value, error) {
+	logID := loader.GetLogID(ctx)
+	if self.client == nil || self.tables == nil {
+		return nil, support.ErrorConfigClient
 	}
-	self.client = value.(*mongo.Database)
-
-	tables, ok := support.GetValue(consts.DB_TABLE_NAMES)
-	if !ok || !support.Bool(tables) {
-		return support.ErrorConfigTables
-	}
-
-	self.tables = tables.(*SchemaTableName)
 	if self.tables.Model == "" || self.tables.Table == "" {
-		return support.ErrorConfigTables
-	}
-	return nil
-}
-
-func (self *MongoLoader) Load(ctx context.Context, model string) (*source.Value, error) {
-	logID := GetLogID(ctx)
-	if err := self.Init(); err != nil {
-		support.LogError(logID, "Load Error", err)
-		return nil, err
+		return nil, support.ErrorConfigTables
 	}
 	where1 := map[string]any{"uukey": model}
 	where2 := map[string]any{"model": model}
-	if scope := GetScope(ctx); scope != nil {
+	if scope := loader.GetScope(ctx); scope != nil {
 		where1 = maputil.Merge(where1, scope)
 		where2 = maputil.Merge(where2, scope)
 	}
@@ -70,7 +59,7 @@ func (self *MongoLoader) Load(ctx context.Context, model string) (*source.Value,
 		groups[group.UUKey] = group
 	}
 	// reset default group, seqno to 0
-	groups["basic"] = ResetDefaultGroup(groups)
+	groups["basic"] = loader.ResetDefaultGroup(groups)
 	fields := map[string]source.Field{}
 	for _, item := range detail.Fields {
 		group, _ := groups[item.Group]
@@ -110,10 +99,10 @@ func (self *MongoLoader) Load(ctx context.Context, model string) (*source.Value,
 		Model: *detail, Fields: fields, Groups: groups,
 		Tables: tables, Inputs: inputs, Clicks: clicks,
 	}
-	return ResolveExtends(ctx, self, model, value)
+	return loader.ResolveExtends(ctx, self, model, value)
 }
 
-func (self *MongoLoader) toBson(where map[string]any) bson.D {
+func (self *Loader) toBson(where map[string]any) bson.D {
 	filter := bson.D{}
 	for key, val := range where {
 		switch support.GetType(val) {
@@ -133,8 +122,8 @@ func (self *MongoLoader) toBson(where map[string]any) bson.D {
 	return filter
 }
 
-func (self *MongoLoader) getModel(ctx context.Context, where map[string]any) (*source.Model, error) {
-	logID := GetLogID(ctx)
+func (self *Loader) getModel(ctx context.Context, where map[string]any) (*source.Model, error) {
+	logID := loader.GetLogID(ctx)
 	result := &source.Model{}
 	collect := self.client.Collection(self.tables.Model)
 	find := collect.FindOne(ctx, self.toBson(where))
@@ -158,8 +147,8 @@ func (self *MongoLoader) getModel(ctx context.Context, where map[string]any) (*s
 	return result, nil
 }
 
-func (self *MongoLoader) getTables(ctx context.Context, where map[string]any) (map[string]source.Table, error) {
-	logID := GetLogID(ctx)
+func (self *Loader) getTables(ctx context.Context, where map[string]any) (map[string]source.Table, error) {
+	logID := loader.GetLogID(ctx)
 	result, collect := []source.Table{}, self.client.Collection(self.tables.Table)
 	if cursor, err := collect.Find(ctx, self.toBson(where)); err != nil {
 		support.LogError(logID, "Get Tables Error", err)
@@ -194,8 +183,8 @@ func (self *MongoLoader) getTables(ctx context.Context, where map[string]any) (m
 	return final, nil
 }
 
-func (self *MongoLoader) getInputs(ctx context.Context, where map[string]any) (map[string]source.Input, error) {
-	logID := GetLogID(ctx)
+func (self *Loader) getInputs(ctx context.Context, where map[string]any) (map[string]source.Input, error) {
+	logID := loader.GetLogID(ctx)
 	collect := self.client.Collection(self.tables.Input)
 	result, collect := []source.Input{}, self.client.Collection(self.tables.Input)
 	if cursor, err := collect.Find(ctx, self.toBson(where)); err != nil {

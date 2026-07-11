@@ -13,7 +13,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/convertor"
 	"github.com/duke-git/lancet/v2/slice"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Field struct {
@@ -265,12 +264,10 @@ func (s Field) Parse(get any) any {
 			} else {
 				return nil
 			}
-		case primitive.DateTime:
-			v := get.Time()
-			return &v
-		case *primitive.DateTime:
-			v := get.Time()
-			return &v
+		default:
+			if v, ok := parseMongoDateTime(get); ok {
+				return &v
+			}
 		}
 	case consts.FTYPE_NUMERIC, consts.DTYPE_EXPENSE:
 		// null\0\undefinded, reset value
@@ -378,4 +375,29 @@ func (s Field) ParseTime(get string) *time.Time {
 		return support.ParseDate(get)
 	}
 	return nil
+}
+
+func parseMongoDateTime(get any) (time.Time, bool) {
+	if get == nil {
+		return time.Time{}, false
+	}
+	val := reflect.ValueOf(get)
+	for val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return time.Time{}, false
+		}
+		val = val.Elem()
+	}
+	if val.Type().PkgPath() == "go.mongodb.org/mongo-driver/bson/primitive" &&
+		val.Type().Name() == "DateTime" {
+		if method := val.MethodByName("Time"); method.IsValid() && method.Type().NumIn() == 0 {
+			results := method.Call(nil)
+			if len(results) == 1 {
+				if t, ok := results[0].Interface().(time.Time); ok {
+					return t, true
+				}
+			}
+		}
+	}
+	return time.Time{}, false
 }

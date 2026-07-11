@@ -1,52 +1,44 @@
-package loader
+package mysql
 
 import (
 	"context"
 	"encoding/json"
+	"strings"
+
 	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/loader"
 	"github.com/OptLTD/library/search/source"
 	"github.com/OptLTD/library/search/support"
-	"strings"
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"gorm.io/gorm"
 )
 
-type MySQLLoader struct {
+type Loader struct {
 	client *gorm.DB
-	tables *SchemaTableName
+	tables *loader.SchemaTableName
 }
 
-func (self *MySQLLoader) Init() error {
-	value, ok := support.GetValue(consts.DATABASE_MYSQL)
-	if !ok || !support.Bool(value) {
-		return support.ErrorConfigClient
-	}
+func NewLoader(db *gorm.DB, tables *loader.SchemaTableName) loader.ILoader {
 	session := &gorm.Session{QueryFields: true}
-	self.client = value.(*gorm.DB).Session(session)
-
-	tables, ok := support.GetValue(consts.DB_TABLE_NAMES)
-	if !ok || !support.Bool(tables) {
-		return support.ErrorConfigTables
+	return &Loader{
+		client: db.Session(session),
+		tables: tables,
 	}
-
-	self.tables = tables.(*SchemaTableName)
-	if self.tables.Model == "" || self.tables.Table == "" {
-		return support.ErrorConfigTables
-	}
-	return nil
 }
 
-func (self *MySQLLoader) Load(ctx context.Context, model string) (*source.Value, error) {
-	logID := GetLogID(ctx)
-	if err := self.Init(); err != nil {
-		support.LogError(logID, "Load error", err)
-		return nil, err
+func (self *Loader) Load(ctx context.Context, model string) (*source.Value, error) {
+	logID := loader.GetLogID(ctx)
+	if self.client == nil || self.tables == nil {
+		return nil, support.ErrorConfigClient
+	}
+	if self.tables.Model == "" || self.tables.Table == "" {
+		return nil, support.ErrorConfigTables
 	}
 	where1 := map[string]any{"uukey": model}
 	where2 := map[string]any{"model": model}
-	if scope := GetScope(ctx); scope != nil {
+	if scope := loader.GetScope(ctx); scope != nil {
 		where1 = maputil.Merge(where1, scope)
 		where2 = maputil.Merge(where2, scope)
 	}
@@ -64,8 +56,7 @@ func (self *MySQLLoader) Load(ctx context.Context, model string) (*source.Value,
 		group.GType = strings.ToUpper(group.GType)
 		groups[group.UUKey] = group
 	}
-	// reset default group, seqno to 0
-	groups["basic"] = ResetDefaultGroup(groups)
+	groups["basic"] = loader.ResetDefaultGroup(groups)
 	fields := map[string]source.Field{}
 	for _, item := range detail.Fields {
 		group, _ := groups[item.Group]
@@ -95,17 +86,16 @@ func (self *MySQLLoader) Load(ctx context.Context, model string) (*source.Value,
 		Model: *detail, Fields: fields, Groups: groups,
 		Tables: tables, Inputs: inputs, Clicks: clicks,
 	}
-	return ResolveExtends(ctx, self, model, value)
+	return loader.ResolveExtends(ctx, self, model, value)
 }
 
-func (self *MySQLLoader) getModel(where map[string]any) (*source.Model, error) {
+func (self *Loader) getModel(where map[string]any) (*source.Model, error) {
 	result := &source.Model{}
 	query := self.client.Table(self.tables.Model)
 	count := query.Where(where).First(result).RowsAffected
 	if count == 0 {
 		return nil, query.Error
 	}
-	// reset index
 	slice.ForEach(result.Groups, func(idx int, item source.Group) {
 		result.Groups[idx].SeqNo = support.Or(item.SeqNo, uint16(idx+1))
 	})
@@ -115,13 +105,12 @@ func (self *MySQLLoader) getModel(where map[string]any) (*source.Model, error) {
 			item.SeqNo, uint16(idx+1),
 		)
 	})
-	// rename driver
 	result.Driver = strings.ToUpper(result.Driver)
 	return result, nil
 }
 
-func (self *MySQLLoader) getTables(ctx context.Context, where map[string]any) (map[string]source.Table, error) {
-	logID := GetLogID(ctx)
+func (self *Loader) getTables(ctx context.Context, where map[string]any) (map[string]source.Table, error) {
+	logID := loader.GetLogID(ctx)
 	result := []map[string]any{}
 	query := self.client.Table(self.tables.Table)
 	cursor := query.Where(where).Scan(&result)
@@ -147,15 +136,12 @@ func (self *MySQLLoader) getTables(ctx context.Context, where map[string]any) (m
 		if title, ok := item["title"]; ok && title != "" {
 			table.Title = title.(string)
 		}
-
 		if query, ok := item["query"]; ok && query != nil && query != "" {
 			json.Unmarshal([]byte(query.(string)), &table.Query)
 		}
-
 		if fields, ok := item["fields"]; ok && fields != nil && fields != "" {
 			json.Unmarshal([]byte(fields.(string)), &table.Fields)
 		}
-
 		if clicks, ok := item["clicks"]; ok && clicks != nil && clicks != "" {
 			json.Unmarshal([]byte(clicks.(string)), &table.Clicks)
 		}
@@ -176,8 +162,8 @@ func (self *MySQLLoader) getTables(ctx context.Context, where map[string]any) (m
 	return tables, nil
 }
 
-func (self *MySQLLoader) getInputs(ctx context.Context, where map[string]any) (map[string]source.Input, error) {
-	logID := GetLogID(ctx)
+func (self *Loader) getInputs(ctx context.Context, where map[string]any) (map[string]source.Input, error) {
+	logID := loader.GetLogID(ctx)
 	result := []map[string]any{}
 	query := self.client.Table(self.tables.Input)
 	cursor := query.Where(where).Scan(&result)
@@ -185,7 +171,6 @@ func (self *MySQLLoader) getInputs(ctx context.Context, where map[string]any) (m
 		support.LogError(logID, "Get Inputs Error", cursor.Error)
 		return nil, cursor.Error
 	}
-
 	if cursor.RowsAffected == 0 {
 		support.LogError(logID, "Get Inputs Error", cursor.Error)
 		return map[string]source.Input{}, cursor.Error

@@ -10,7 +10,7 @@ on:
       modules:
         description: Comma-separated modules (empty = all)
         required: false
-        default: search,formula,jsrunner,jsmodule
+        default: search,search/driver/mysql,search/driver/mongo,search/driver/elastic,search/driver/redis,formula,jsrunner,jsmodule
         type: string
       skip_tests:
         description: Skip go test
@@ -21,6 +21,10 @@ on:
     tags:
       - release/v*
       - search/v*
+      - search/driver/mysql/v*
+      - search/driver/mongo/v*
+      - search/driver/elastic/v*
+      - search/driver/redis/v*
       - formula/v*
       - jsrunner/v*
       - jsmodule/v*
@@ -48,6 +52,10 @@ jobs:
           go-version-file: go.work
           cache-dependency-path: |
             search/go.sum
+            search/driver/mysql/go.sum
+            search/driver/mongo/go.sum
+            search/driver/elastic/go.sum
+            search/driver/redis/go.sum
             formula/go.sum
             jsrunner/go.sum
             jsmodule/go.sum
@@ -58,7 +66,7 @@ jobs:
       - name: Test modules
         run: |
           set -euo pipefail
-          for mod in search formula jsrunner jsmodule; do
+          for mod in search search/driver/mysql search/driver/mongo search/driver/elastic search/driver/redis formula jsrunner jsmodule; do
             echo "testing $mod"
             (cd "$mod" && go test ./...)
           done
@@ -79,6 +87,10 @@ jobs:
           go-version-file: go.work
           cache-dependency-path: |
             search/go.sum
+            search/driver/mysql/go.sum
+            search/driver/mongo/go.sum
+            search/driver/elastic/go.sum
+            search/driver/redis/go.sum
             formula/go.sum
             jsrunner/go.sum
             jsmodule/go.sum
@@ -113,12 +125,17 @@ jobs:
           (cd jsmodule && \
             go mod edit -dropreplace=github.com/OptLTD/library/jsrunner && \
             go mod edit -require=github.com/OptLTD/library/jsrunner@"v${ver}")
+          for driver in search/driver/mysql search/driver/mongo search/driver/elastic search/driver/redis; do
+            (cd "$driver" && \
+              go mod edit -dropreplace=github.com/OptLTD/library/search && \
+              go mod edit -require=github.com/OptLTD/library/search@"v${ver}")
+          done
           go work sync
 
       - name: Validate modules
         env:
           VERSION: ${{ steps.meta.outputs.version }}
-          MODULES: ${{ github.event_name == 'workflow_dispatch' && inputs.modules || 'search,formula,jsrunner,jsmodule' }}
+          MODULES: ${{ github.event_name == 'workflow_dispatch' && inputs.modules || 'search,search/driver/mysql,search/driver/mongo,search/driver/elastic,search/driver/redis,formula,jsrunner,jsmodule' }}
         run: |
           set -euo pipefail
 
@@ -165,9 +182,11 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          git add jsrunner/go.mod jsmodule/go.sum jsrunner/go.sum jsmodule/go.mod 2>/dev/null || true
+          git add jsrunner/go.mod jsmodule/go.sum jsrunner/go.sum jsmodule/go.mod \
+            search/driver/mysql/go.mod search/driver/mongo/go.mod \
+            search/driver/elastic/go.mod search/driver/redis/go.mod 2>/dev/null || true
           if ! git diff --staged --quiet; then
-            git commit -m "chore(release): prepare jsrunner/jsmodule go.mod for ${VERSION}"
+            git commit -m "chore(release): prepare go.mod for ${VERSION}"
           fi
           while IFS= read -r mod; do
             tag="${mod}/${VERSION}"

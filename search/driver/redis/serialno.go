@@ -1,14 +1,15 @@
-package support
+package redis
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"log"
-	"github.com/OptLTD/library/search/consts"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/OptLTD/library/search/support"
 
 	"github.com/alovn/go-bloomfilter"
 	"github.com/duke-git/lancet/v2/random"
@@ -79,16 +80,16 @@ func (self *SerialNo) Option(rules []string) []SNOption {
 	}
 	return result
 }
+func NewSerialNo(client *redis.Client) *SerialNo {
+	return &SerialNo{client: client}
+}
+
 func (self *SerialNo) Init(kind string, options []string) error {
 	self.snkind = kind
 	self.option = self.Option(options)
 	self.period = time.Now().Format("200601")
 
-	// 优先从 registry 获取已注册的 Redis 客户端
-	client, ok := GetValue(consts.DATABASE_REDIS)
-	if ok && client != nil {
-		self.client = client.(*redis.Client)
-	} else {
+	if self.client == nil {
 		return errors.New("redis client not found")
 	}
 
@@ -139,7 +140,7 @@ func (self *SerialNo) parse(base int64) string {
 		switch option.Kind {
 		case "RANDOM":
 			length, err := strconv.ParseInt(option.Value, 10, 64)
-			length = If(length == 0 || err != nil, length, 5)
+			length = support.If(length == 0 || err != nil, length, 5)
 			parts = append(parts, random.RandNumeral(int(length)))
 		case KIND_COUNTING:
 			if growth, _ = strconv.ParseInt(option.Value, 10, 10); growth == 0 {
