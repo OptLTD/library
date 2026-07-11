@@ -11,7 +11,7 @@ Release workflow 会校验：
 3. `jsrunner` 与 `jsmodule` 互相 `require` 的版本号与本次 tag 一致
 4. 测试通过
 
-Tag 格式为 `<module>/<version>`，例如 `search/v0.2.0`、`search/driver/mysql/v0.2.0`。
+Tag 格式为 `<module>/<version>`，例如 `search/v0.2.0`、`engine/mysql/v0.2.0`。
 
 ## GitHub Actions
 
@@ -19,7 +19,7 @@ Tag 格式为 `<module>/<version>`，例如 `search/v0.2.0`、`search/driver/mys
 
 | 触发方式 | 行为 |
 |----------|------|
-| push `search/v0.2.0`、`search/driver/mysql/v0.2.0` 等 module tag | 跑测试 |
+| push `search/v0.2.0`、`engine/mysql/v0.2.0` 等 module tag | 跑测试 |
 | push `release/v0.1.0` | 跑测试 + 为全部 module 打 tag 并 push |
 | Actions 页面手动 Run workflow | 跑测试 + 发布（可指定 module） |
 
@@ -27,16 +27,19 @@ Tag 格式为 `<module>/<version>`，例如 `search/v0.2.0`、`search/driver/mys
 
 1. 打开 **Actions → Release → Run workflow**
 2. 填写 `version`（如 `v0.2.0`）
-3. 可选：修改 `modules`（默认包含 search core、四个 driver、formula、jsrunner、jsmodule）
+3. 可选：修改 `modules`（默认包含 search core、全部 driver、formula、jsrunner、jsmodule）
 4. Run workflow
 
 成功后自动创建并推送：
 
 - `search/v0.2.0`
-- `search/driver/mysql/v0.2.0`
-- `search/driver/mongo/v0.2.0`
-- `search/driver/elastic/v0.2.0`
-- `search/driver/redis/v0.2.0`
+- `engine/memory/v0.2.0`
+- `engine/mysql/v0.2.0`
+- `engine/mongo/v0.2.0`
+- `engine/postgres/v0.2.0`
+- `engine/sqlite/v0.2.0`
+- `engine/elastic/v0.2.0`
+- `engine/redis/v0.2.0`
 - `formula/v0.2.0`
 - `jsrunner/v0.2.0`
 - `jsmodule/v0.2.0`
@@ -54,10 +57,13 @@ git push origin release/v0.1.0
 
 ```bash
 go get github.com/OptLTD/library/search@v0.2.0
-go get github.com/OptLTD/library/search/driver/mysql@v0.2.0   # 按需
-go get github.com/OptLTD/library/search/driver/mongo@v0.2.0   # 按需
-go get github.com/OptLTD/library/search/driver/elastic@v0.2.0 # 按需
-go get github.com/OptLTD/library/search/driver/redis@v0.2.0   # 按需
+go get github.com/OptLTD/library/engine/memory@v0.2.0  # 内存引擎
+go get github.com/OptLTD/library/engine/mysql@v0.2.0    # 按需
+go get github.com/OptLTD/library/engine/mongo@v0.2.0    # 按需
+go get github.com/OptLTD/library/engine/postgres@v0.2.0 # 按需
+go get github.com/OptLTD/library/engine/sqlite@v0.2.0   # 按需
+go get github.com/OptLTD/library/engine/elastic@v0.2.0  # 按需
+go get github.com/OptLTD/library/engine/redis@v0.2.0   # 按需
 go get github.com/OptLTD/library/formula@v0.2.0
 go get github.com/OptLTD/library/jsrunner@v0.2.0
 go get github.com/OptLTD/library/jsmodule@v0.2.0
@@ -65,7 +71,7 @@ go get github.com/OptLTD/library/jsmodule@v0.2.0
 
 ```go
 import (
-    "github.com/OptLTD/library/search/engine"
+    "github.com/OptLTD/library/engine/memory"
     "github.com/OptLTD/library/formula"
     js "github.com/OptLTD/library/jsrunner"
     _ "github.com/OptLTD/library/jsmodule/cache"

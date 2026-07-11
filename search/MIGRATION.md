@@ -1,17 +1,32 @@
 # Search v0.1.x → v0.2.x 升级指南
 
-v0.2.0 将数据库驱动拆为独立子模块，core 模块不再携带 ES / Mongo / GORM / Redis 等 SDK。按需 `go get` 对应 driver 即可。
+v0.2.0 将存储实现拆为与 `search` **同级**的 `engine/*` 子模块；core 仅保留模型、解析与 `storage` 接口。
 
 ## 变更摘要
 
 | 类别 | v0.1.x（旧） | v0.2.x（新） |
 |------|-------------|-------------|
-| 模块 | 单一 `search` 含全部 DB SDK | `search` core + `search/driver/*` 按需引入 |
-| 引擎 | `engine.NewEngine(name, client)` | `driver/<name>.NewEngine(client)` |
-| Loader | `loader.NewLoader(name)` + registry Init | `driver/<name>.NewLoader(client, tables)` |
-| Redis 缓存 | `schema.NewCache("redis")` + registry | `redis.NewCache(client, prefix, ttl)` |
-| 序列号 | `support.SerialNo` + registry | `redis.NewSerialNo(client)` |
-| Memory | `engine.NewMemoryEngine()` 或 `NewEngine(SEARCH_MEMORY, nil)` | 仅 `engine.NewMemoryEngine()`（core 内置） |
+| 模块 | 单一 `search` 含全部 DB SDK | `search` core + `engine/*` 按需引入 |
+| 接口包 | `search/engine` | `search/storage` |
+| 接口类型 | `engine.IEngine` | `storage.IEngine` |
+| 引擎工厂 | `engine.NewEngine(name, client)` | `engine/<name>.NewEngine(client)` |
+| Loader | `loader.NewLoader(name)` + registry Init | `engine/<name>.NewLoader(client, tables)` |
+| Memory | `engine.NewMemoryEngine()`（core 内） | `engine/memory.NewEngine()` |
+| Redis 缓存 | `schema.NewCache("redis")` + registry | `engine/redis.NewCache(...)` |
+| 序列号 | `support.SerialNo` + registry | `engine/redis.NewSerialNo(client)` |
+
+### 模块路径对照
+
+| 能力 | v0.1.x | v0.2.x |
+|------|--------|--------|
+| core | `github.com/OptLTD/library/search` | 不变 |
+| memory | （core 内） | `github.com/OptLTD/library/engine/memory` |
+| mysql | （core 内） | `github.com/OptLTD/library/engine/mysql` |
+| postgres | 无 | `github.com/OptLTD/library/engine/postgres` |
+| sqlite | 无 | `github.com/OptLTD/library/engine/sqlite` |
+| mongo | （core 内） | `github.com/OptLTD/library/engine/mongo` |
+| elastic | （core 内） | `github.com/OptLTD/library/engine/elastic` |
+| redis | （core 内） | `github.com/OptLTD/library/engine/redis` |
 
 ## go.mod 迁移步骤
 
@@ -19,74 +34,84 @@ v0.2.0 将数据库驱动拆为独立子模块，core 模块不再携带 ES / Mo
 # 1. 升级 core
 go get github.com/OptLTD/library/search@v0.2.0
 
-# 2. 按需添加驱动（仅用 MySQL 则只加这一条）
-go get github.com/OptLTD/library/search/driver/mysql@v0.2.0
-go get github.com/OptLTD/library/search/driver/mongo@v0.2.0    # 可选
-go get github.com/OptLTD/library/search/driver/elastic@v0.2.0  # 可选
-go get github.com/OptLTD/library/search/driver/redis@v0.2.0    # 可选
+# 2. 按需添加 engine 模块
+go get github.com/OptLTD/library/engine/memory@v0.2.0   # 内存引擎
+go get github.com/OptLTD/library/engine/mysql@v0.2.0    # 按需
+go get github.com/OptLTD/library/engine/postgres@v0.2.0 # 按需
+go get github.com/OptLTD/library/engine/sqlite@v0.2.0   # 按需
+go get github.com/OptLTD/library/engine/mongo@v0.2.0    # 按需
+go get github.com/OptLTD/library/engine/elastic@v0.2.0  # 按需
+go get github.com/OptLTD/library/engine/redis@v0.2.0    # 按需
 
-# 3. 清理未使用的 indirect 依赖
+# 3. 清理
 go mod tidy
 ```
 
 ## 代码迁移对照
 
-### Engine — MySQL
+### Memory
 
 ```go
 // 旧
-support.Register(consts.DATABASE_MYSQL, gormDB)
-eng := engine.NewEngine(consts.SEARCH_DBMYSQL, gormDB)
+import "github.com/OptLTD/library/search/engine"
+mem := engine.NewMemoryEngine()
 
 // 新
-import searchmysql "github.com/OptLTD/library/search/driver/mysql"
-eng := searchmysql.NewEngine(gormDB)
+import "github.com/OptLTD/library/engine/memory"
+mem := memory.NewEngine()
 ```
 
-### Loader — MySQL
+### MySQL
 
 ```go
 // 旧
 support.Register(consts.DATABASE_MYSQL, gormDB)
 support.Register(consts.DB_TABLE_NAMES, tables)
+eng := engine.NewEngine(consts.SEARCH_DBMYSQL, gormDB)
 ldr := loader.NewLoader(consts.LOADER_MYSQL)
 
 // 新
-import searchmysql "github.com/OptLTD/library/search/driver/mysql"
-ldr := searchmysql.NewLoader(gormDB, tables)
+import "github.com/OptLTD/library/engine/mysql"
+eng := mysql.NewEngine(gormDB)
+ldr := mysql.NewLoader(gormDB, tables)
 ```
 
-### Engine — MongoDB
+### PostgreSQL / SQLite
+
+```go
+import "github.com/OptLTD/library/engine/postgres"
+eng := postgres.NewEngine(gormDB)
+ldr := postgres.NewLoader(gormDB, tables)
+
+import "github.com/OptLTD/library/engine/sqlite"
+eng := sqlite.NewEngine(gormDB)
+ldr := sqlite.NewLoader(gormDB, tables)
+```
+
+应用层需自行引入 GORM dialect：`gorm.io/driver/postgres`、`gorm.io/driver/sqlite`。
+
+### MongoDB
 
 ```go
 // 旧
 eng := engine.NewEngine(consts.SEARCH_MONGODB, mongoDB)
-
-// 新
-import searchmongo "github.com/OptLTD/library/search/driver/mongo"
-eng := searchmongo.NewEngine(mongoDB)
-```
-
-### Loader — MongoDB
-
-```go
-// 旧
 ldr := loader.NewLoader(consts.LOADER_MONGO)
 
 // 新
-import searchmongo "github.com/OptLTD/library/search/driver/mongo"
-ldr := searchmongo.NewLoader(mongoDB, tables)
+import "github.com/OptLTD/library/engine/mongo"
+eng := mongo.NewEngine(mongoDB)
+ldr := mongo.NewLoader(mongoDB, tables)
 ```
 
-### Engine — Elasticsearch
+### Elasticsearch
 
 ```go
 // 旧
 eng := engine.NewEngine(consts.SEARCH_ELASTIC, esClient)
 
 // 新
-import searchelastic "github.com/OptLTD/library/search/driver/elastic"
-eng := searchelastic.NewEngine(esClient)
+import "github.com/OptLTD/library/engine/elastic"
+eng := elastic.NewEngine(esClient)
 ```
 
 ### Redis 缓存与序列号
@@ -99,9 +124,9 @@ sn := &support.SerialNo{}
 sn.Init(kind, options)
 
 // 新
-import searchredis "github.com/OptLTD/library/search/driver/redis"
+import searchredis "github.com/OptLTD/library/engine/redis"
 cache := searchredis.NewCache(redisClient, "cache:", ttl)
-searchredis.SetGlobalCache(redisClient, "cache:", ttl) // 可选：设为全局缓存
+searchredis.SetGlobalCache(redisClient, "cache:", ttl) // 可选
 sn := searchredis.NewSerialNo(redisClient)
 sn.Init(kind, options)
 ```
@@ -109,33 +134,41 @@ sn.Init(kind, options)
 ## 无需改动的部分
 
 - `consts`、`source`、`schema`、`parser`、`request`、`respond` 的 import 路径不变
-- `IEngine` / `ILoader` 接口不变，业务层 `Store` / `Search` / `Digest` 调用不变
-- Memory 引擎：`engine.NewMemoryEngine()` 前后一致
+- `storage.IEngine` 业务方法（`Store` / `Search` / `Digest` 等）不变
 - JSON / Embed Loader：`loader.NewLoader(consts.LOADER_JSON)` 仍在 core 中
 
 ## 破坏性变更
 
-- 删除 `engine.NewEngine`
+- 删除 `search/engine` 包 → 改为 `search/storage` + `engine/*`
+- 删除 `engine.NewEngine` 工厂函数
 - 删除 `loader.NewLoader` 对 `LOADER_MYSQL` / `LOADER_MONGO` 的分支
-- 删除 core 内通过 registry 隐式取 DB 连接的 Loader Init 流程
-- `support.SerialNo` 移至 `search/driver/redis`
-- `schema.NewCache("redis")` 不再可用，请使用 redis driver
+- 删除 core 内 registry 隐式取 DB 连接的 Loader Init 流程
+- `support.SerialNo` 移至 `engine/redis`
+- `schema.NewCache("redis")` 不再可用
 
 ## 示例对照
 
-本仓库 [example/demo/](../example/demo/) 提供：
+本仓库 [example/search/](../example/search/) 提供可运行示例与 v0.1.x 对照：
 
 | 文件 | 说明 |
 |------|------|
-| `search_memory.go` | 升级后：仅用 core，零 DB SDK |
-| `search_mysql_legacy.go` | 升级前：工厂 + registry（`//go:build ignore`） |
-| `search_mysql.go` | 升级后：显式 driver 构造 |
+| `memory.go` | 升级后：`engine/memory.NewEngine()` |
+| `mysql.go` | 升级后：`engine/mysql` 显式构造 |
+| `mysql_legacy.go` | 升级前：工厂 + registry（`//go:build ignore`，不参与编译） |
 
-## MySQL dialect 说明
+运行全部示例：
 
-core 与 `driver/mysql` 均不引入 `gorm.io/driver/mysql`。应用层需自行：
+```bash
+go run ./example
+```
+
+## GORM dialect 说明
+
+`search` core 与各 SQL 类 `engine/*`（mysql / postgres / sqlite）均不引入 dialect driver。应用层需自行：
 
 ```go
 import "gorm.io/driver/mysql"
 db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 ```
+
+PostgreSQL / SQLite 同理，分别使用 `gorm.io/driver/postgres`、`gorm.io/driver/sqlite`。

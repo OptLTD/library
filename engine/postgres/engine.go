@@ -1,4 +1,4 @@
-package mysql
+package postgres
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
+	"github.com/OptLTD/library/search/storage"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/support"
@@ -19,19 +19,19 @@ import (
 
 type Engine struct {
 	client  *gorm.DB
-	handles []engine.ICallable
+	handles []storage.ICallable
 }
 
-func NewEngine(db *gorm.DB) engine.IEngine {
+func NewEngine(db *gorm.DB) storage.IEngine {
 	session := &gorm.Session{QueryFields: true}
 	return &Engine{
 		client: db.Session(session),
 	}
 }
 
-func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
+func (self *Engine) Using(handle storage.ICallable) storage.IEngine {
 	if self.handles == nil {
-		self.handles = []engine.ICallable{}
+		self.handles = []storage.ICallable{}
 	}
 	self.handles = append(self.handles, handle)
 	return self
@@ -236,7 +236,7 @@ func (self *Engine) buildQuery(logic string, queries *[]schema.Query) []clause.E
 		case consts.LOGIC_INCLUDES:
 			result = append(result, clause.IN{Column: query.Field, Values: query.Value.([]any)})
 		case consts.LOGIC_CONTAINS:
-			subsql := fmt.Sprintf("find_in_set(`%s`, ?)", query.Field)
+			subsql := fmt.Sprintf(`position(',' || ? || ',' in ',' || "%s" || ',') > 0`, query.Field)
 			result = append(result, clause.Expr{SQL: subsql, Vars: []any{query.Value}})
 		case consts.LOGIC_LESTHAN:
 			result = append(result, clause.Lt{Column: query.Field, Value: query.Value})
@@ -247,7 +247,7 @@ func (self *Engine) buildQuery(logic string, queries *[]schema.Query) []clause.E
 		case consts.LOGIC_GRAT_EQ:
 			result = append(result, clause.Gte{Column: query.Field, Value: query.Value})
 		case consts.LOGIC_BETWEEN:
-			subsql := fmt.Sprintf("`%s` between ? and ?", query.Field)
+			subsql := fmt.Sprintf(`"%s" between ? and ?`, query.Field)
 			result = append(result, clause.Expr{SQL: subsql, Vars: query.Value.([]any)})
 		case consts.LOGIC_SUBRAW:
 			result = append(result, clause.Expr{SQL: query.Value.(string), Vars: []any{}})

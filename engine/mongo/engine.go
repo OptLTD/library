@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
+	"github.com/OptLTD/library/search/storage"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
@@ -24,7 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func NewEngine(db *mongo.Database) engine.IEngine {
+func NewEngine(db *mongo.Database) storage.IEngine {
 	return &Engine{client: db}
 }
 
@@ -32,7 +32,7 @@ type Engine struct {
 	debug bool
 
 	client  *mongo.Database
-	handles []engine.ICallable
+	handles []storage.ICallable
 }
 
 // aggrStage 封装 MongoDB 聚合管道的各个阶段配置
@@ -42,9 +42,9 @@ type aggrStage struct {
 	Unique  bson.M // $addFields 阶段的去重计数计算（用于 VALUE_UNQ）
 }
 
-func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
+func (self *Engine) Using(handle storage.ICallable) storage.IEngine {
 	if self.handles == nil {
-		self.handles = []engine.ICallable{}
+		self.handles = []storage.ICallable{}
 	}
 
 	self.handles = append(self.handles, handle)

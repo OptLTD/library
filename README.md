@@ -10,12 +10,12 @@ Go 多 module monorepo，为 [superuser-api](https://github.com/OptLTD) 等业�
 
 ```go
 import (
-    "github.com/OptLTD/library/search/engine"
+    "github.com/OptLTD/library/engine/memory"
     "github.com/OptLTD/library/search/respond"
     "github.com/OptLTD/library/search/schema"
 )
 
-mem := engine.NewMemoryEngine()
+mem := memory.NewEngine()
 mem.Store(input, &respond.Record{ /* ... */ })
 result, _ := mem.Search(table)
 ```

@@ -8,7 +8,7 @@ import (
 	"log"
 	"runtime"
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
+	"github.com/OptLTD/library/search/storage"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
@@ -26,18 +26,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func NewEngine(client *elasticsearch.Client) engine.IEngine {
+func NewEngine(client *elasticsearch.Client) storage.IEngine {
 	return &Engine{client: client}
 }
 
 type Engine struct {
-	handles []engine.ICallable
+	handles []storage.ICallable
 	client  *elasticsearch.Client
 }
 
-func (self *Engine) Using(handle engine.ICallable) engine.IEngine {
+func (self *Engine) Using(handle storage.ICallable) storage.IEngine {
 	if self.handles == nil {
-		self.handles = []engine.ICallable{}
+		self.handles = []storage.ICallable{}
 	}
 
 	self.handles = append(self.handles, handle)

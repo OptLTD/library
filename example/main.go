@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"example/demo"
+	"example/ability"
+	"example/search"
 )
 
 func main() {
@@ -14,10 +15,10 @@ func main() {
 		name string
 		run  func() error
 	}{
-		{"formula", demo.Formula},
-		{"search", demo.Search},
-		{"github.com/OptLTD/library/jsrunner", demo.JSRunner},
-		{"github.com/OptLTD/library/jsmodule", demo.JSModule},
+		{"formula", ability.Formula},
+		{"search", search.Run},
+		{"github.com/OptLTD/library/jsrunner", ability.JSRunner},
+		{"github.com/OptLTD/library/jsmodule", ability.JSModule},
 	}
 
 	for _, item := range runners {

@@ -1,9 +1,10 @@
-package engine
+package memory
 
 import (
 	"fmt"
 	"log"
 	"github.com/OptLTD/library/search/consts"
+	"github.com/OptLTD/library/search/storage"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
 	"github.com/OptLTD/library/search/source"
@@ -23,20 +24,20 @@ type MemoryEngine struct {
 	// 存储结构: table -> uukey -> data
 	storage map[string]map[string]map[string]any
 	mu      sync.RWMutex
-	handles []ICallable
+	handles []storage.ICallable
 }
 
-// NewMemoryEngine 创建新的内存引擎实例
-func NewMemoryEngine() *MemoryEngine {
+// NewEngine 创建新的内存引擎实例
+func NewEngine() *MemoryEngine {
 	return &MemoryEngine{
 		storage: make(map[string]map[string]map[string]any),
-		handles: []ICallable{},
+		handles: []storage.ICallable{},
 	}
 }
 
-func (self *MemoryEngine) Using(handle ICallable) IEngine {
+func (self *MemoryEngine) Using(handle storage.ICallable) storage.IEngine {
 	if self.handles == nil {
-		self.handles = []ICallable{}
+		self.handles = []storage.ICallable{}
 	}
 	self.handles = append(self.handles, handle)
 	return self

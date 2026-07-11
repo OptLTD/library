@@ -1,15 +1,14 @@
 //go:build ignore
 
 // 以下为 v0.1.x 用法对照，不参与 go run ./example 编译。
-// 升级后请改用 search_mysql.go。
+// 升级后请改用 mysql.go。
 
-package demo
+package search
 
 import (
 	"context"
 
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
 	"github.com/OptLTD/library/search/loader"
 	"github.com/OptLTD/library/search/support"
 	"gorm.io/gorm"
@@ -26,15 +25,9 @@ func searchMySQLLegacy(gormDB *gorm.DB) error {
 	support.Register(consts.DATABASE_MYSQL, gormDB)
 	support.Register(consts.DB_TABLE_NAMES, tables)
 
-	eng := engine.NewEngine(consts.SEARCH_DBMYSQL, gormDB)
-	ldr := loader.NewLoader(consts.LOADER_MYSQL)
-
-	ctx := context.Background()
-	value, err := ldr.Load(ctx, "demo_model")
-	if err != nil {
-		return err
-	}
-	_ = eng
-	_ = value
+	// eng := engine.NewEngine(consts.SEARCH_DBMYSQL, gormDB)
+	// ldr := loader.NewLoader(consts.LOADER_MYSQL)
+	_ = context.Background()
+	_ = tables
 	return nil
 }

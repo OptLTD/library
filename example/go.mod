@@ -3,11 +3,12 @@ module example
 go 1.25.0
 
 require (
+	github.com/OptLTD/library/engine/memory v0.0.0
+	github.com/OptLTD/library/engine/mysql v0.0.0
 	github.com/OptLTD/library/formula v0.0.0
 	github.com/OptLTD/library/jsmodule v1.0.0
 	github.com/OptLTD/library/jsrunner v1.0.0
 	github.com/OptLTD/library/search v0.0.0
-	github.com/OptLTD/library/search/driver/mysql v0.0.0
 )
 
 require (
@@ -30,9 +31,10 @@ require (
 )
 
 replace (
+	github.com/OptLTD/library/engine/memory => ../engine/memory
+	github.com/OptLTD/library/engine/mysql => ../engine/mysql
 	github.com/OptLTD/library/formula => ../formula
 	github.com/OptLTD/library/jsmodule => ../jsmodule
 	github.com/OptLTD/library/jsrunner => ../jsrunner
 	github.com/OptLTD/library/search => ../search
-	github.com/OptLTD/library/search/driver/mysql => ../search/driver/mysql
 )

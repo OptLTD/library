@@ -1,4 +1,4 @@
-module github.com/OptLTD/library/search/driver/mongo
+module github.com/OptLTD/library/engine/mongo
 
 go 1.25.0
 
@@ -27,4 +27,4 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 )
 
-replace github.com/OptLTD/library/search => ../..
+replace github.com/OptLTD/library/search => ../../search

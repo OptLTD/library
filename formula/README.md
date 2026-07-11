@@ -62,7 +62,7 @@ DAYS(结束时间 - 开始时间)
 - 存量小写 `if(` 可用 `formula.NormalizeExcelIFCalls(raw)` 预处理后再 `Build`
 - `Build` 对数值结果截断保留 3 位小数；字符串等非数值结果原样返回
 
-完整示例见 [example/demo/formula.go](../example/demo/formula.go)。
+完整示例见 [example/ability/formula.go](../example/ability/formula.go)。
 
 ## 测试
 

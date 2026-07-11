@@ -1,10 +1,10 @@
-package demo
+package search
 
 import (
 	"fmt"
 
+	"github.com/OptLTD/library/engine/memory"
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
@@ -12,12 +12,12 @@ import (
 )
 
 func SearchMemory() error {
-	fmt.Println("\n--- search (memory, core-only) ---")
+	fmt.Println("\n--- search (memory, engine/memory) ---")
 
 	input := demoSearchInput()
 	table := demoSearchTable(input)
 
-	mem := engine.NewMemoryEngine()
+	mem := memory.NewEngine()
 	rows := []struct {
 		uukey string
 		name  string

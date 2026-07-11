@@ -1,13 +1,16 @@
 go 1.25.0
 
 use (
+	./engine/elastic
+	./engine/memory
+	./engine/mongo
+	./engine/mysql
+	./engine/postgres
+	./engine/redis
+	./engine/sqlite
 	./example
 	./formula
 	./jsmodule
 	./jsrunner
 	./search
-	./search/driver/elastic
-	./search/driver/mongo
-	./search/driver/mysql
-	./search/driver/redis
 )

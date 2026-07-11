@@ -48,7 +48,7 @@ func (c *memCache) Del(key string) {
 
 var defaultCache ICache
 
-// NewCache 创建内存缓存实例。Redis 缓存请使用 search/driver/redis。
+// NewCache 创建内存缓存实例。Redis 缓存请使用 engine/redis。
 func NewCache(provider string, ttl time.Duration) ICache {
 	return newMemCache(ttl, 8*time.Minute)
 }

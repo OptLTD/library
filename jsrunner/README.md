@@ -54,7 +54,7 @@ import (
 )
 ```
 
-完整示例见 [example/demo/jsrunner.go](../example/demo/jsrunner.go)。
+完整示例见 [example/ability/jsrunner.go](../example/ability/jsrunner.go)。
 
 ## 依赖说明
 

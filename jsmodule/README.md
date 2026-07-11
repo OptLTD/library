@@ -47,7 +47,7 @@ val, err := js.RunString(ctx, `
 
 自定义模块可调用 `modules.Register` 注册，参见 `modules.go` 中的示例。
 
-完整示例见 [example/demo/jsmodule.go](../example/demo/jsmodule.go)。
+完整示例见 [example/ability/jsmodule.go](../example/ability/jsmodule.go)。
 
 ## 依赖说明
 

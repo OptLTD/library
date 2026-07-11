@@ -1,8 +1,8 @@
-package unittest
+package memory_test
 
 import (
 	"github.com/OptLTD/library/search/consts"
-	"github.com/OptLTD/library/search/engine"
+	"github.com/OptLTD/library/engine/memory"
 	"github.com/OptLTD/library/search/request"
 	"github.com/OptLTD/library/search/respond"
 	"github.com/OptLTD/library/search/schema"
@@ -112,7 +112,7 @@ func createTestTable() *schema.Table {
 }
 
 func TestMemoryEngine_Using(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	assert.NotNil(t, memEngine)
 
 	// 测试 Using 方法
@@ -122,7 +122,7 @@ func TestMemoryEngine_Using(t *testing.T) {
 }
 
 func TestMemoryEngine_First(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestInput()
 
 	// 测试不存在的记录
@@ -175,7 +175,7 @@ func TestMemoryEngine_First(t *testing.T) {
 }
 
 func TestMemoryEngine_Store(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestInput()
 
 	// 测试 INSERT
@@ -237,7 +237,7 @@ func TestMemoryEngine_Store(t *testing.T) {
 }
 
 func TestMemoryEngine_Select(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestInput()
 
 	// 先存储几条记录
@@ -293,7 +293,7 @@ func TestMemoryEngine_Select(t *testing.T) {
 }
 
 func TestMemoryEngine_Upsert(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestInput()
 
 	records := []*respond.Record{
@@ -348,7 +348,7 @@ func TestMemoryEngine_Upsert(t *testing.T) {
 }
 
 func TestMemoryEngine_Search(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestTable()
 
 	// 先存储一些测试数据
@@ -427,7 +427,7 @@ func TestMemoryEngine_Search(t *testing.T) {
 }
 
 func TestMemoryEngine_SUMMARY(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestTable()
 
 	// Pivot 目前简化实现为调用 Search
@@ -437,7 +437,7 @@ func TestMemoryEngine_SUMMARY(t *testing.T) {
 }
 
 func TestMemoryEngine_QueryLogic(t *testing.T) {
-	memEngine := engine.NewMemoryEngine()
+	memEngine := memory.NewEngine()
 	skma := createTestTable()
 	input := createTestInput()
 
