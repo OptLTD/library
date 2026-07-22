@@ -32,6 +32,12 @@ func ParseDate(val any) *time.Time {
 	if err == nil && !ret.IsZero() {
 		return &ret
 	}
+
+	// ONLYMONTH 前端常传 YYYY-MM
+	ret, err = time.Parse("2006-01", datetime)
+	if err == nil && !ret.IsZero() {
+		return &ret
+	}
 	return nil
 }
 

@@ -353,8 +353,18 @@ func (s Field) Equal(old, get any) bool {
 }
 
 func (s Field) ParseTime(get string) *time.Time {
+	get = strings.TrimSpace(get)
+	if get == "" {
+		return nil
+	}
 	switch s.Extra.DataType {
 	case "ONLYDATE", "ONLYMONTH":
+		// 前端 ONLYMONTH 保存为 YYYY-MM（见 useSheet formatSheetDatetimeForSave）
+		if s.Extra.DataType == "ONLYMONTH" {
+			if ret, err := time.Parse("2006-01", get); err == nil {
+				return &ret
+			}
+		}
 		if strings.Contains(get, "00:00:00") {
 			return support.ParseDate(get)
 		}
