@@ -135,12 +135,35 @@ func (self *TableParser) BuildFields(table *source.Table) []source.Field {
 		}
 
 		field.Shown = flag == consts.VISIBLE_SHOW
-		// idx := slice.LastIndexOf(table.Orders, field.UUKey)
-		// field.SeqNo = support.If(idx == -1, field.SeqNo, int64(idx))
+		if idx := fieldOrderInTable(table, field.UUKey); idx >= 0 {
+			field.SeqNo = uint16(idx)
+		}
 		result = append(result, field)
 	}
-	slice.SortByField(result, "SeqNo", "asc")
+	// tables.fields 显式列顺序：用覆盖后的 SeqNo 排序；否则按分组再组内 seqno
+	if table != nil && len(table.Fields) > 0 {
+		slice.SortByField(result, "SeqNo", "asc")
+	} else {
+		sortFieldsByGroupThenSeq(result, groups)
+	}
 	return result
+}
+
+func fieldOrderInTable(table *source.Table, uukey string) int {
+	return fieldOrderInList(table.Fields, uukey)
+}
+
+func fieldOrderInList(list []string, uukey string) int {
+	if len(list) == 0 {
+		return -1
+	}
+	for i, item := range list {
+		matched, err := regexp.Match(item, []byte(uukey))
+		if err == nil && matched {
+			return i
+		}
+	}
+	return -1
 }
 
 func (self *TableParser) BuildClicks(table *source.Table) []source.Click {

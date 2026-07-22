@@ -80,9 +80,10 @@ type FExtra struct {
 	AcceptType string `json:"acceptType,omitempty" bson:"acceptType,omitempty"`
 }
 type Option struct {
-	UUKey string `json:"uukey" bson:"uukey"`
-	Label string `json:"label" bson:"label"`
-	Color string `json:"color" bson:"color"`
+	UUKey  string `json:"uukey" bson:"uukey"`
+	Label  string `json:"label" bson:"label"`
+	Color  string `json:"color,omitempty" bson:"color,omitempty"`
+	Parent string `json:"parent,omitempty" bson:"parent,omitempty"`
 }
 
 func (s Field) GetKey() string {

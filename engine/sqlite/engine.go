@@ -53,12 +53,9 @@ func (self *Engine) First(skma *schema.Input, record *respond.Record) error {
 	}
 	if query.RowsAffected != 0 {
 		record.Storage = record.Decode(skma, value[0])
-		record.Changed = record.ToFlatten(skma, record.Storage)
+		record.Exists = true
+		record.Current = record.ToFlatten(skma, record.Storage)
 	}
-	record.Objects = record.ToObjects(skma, record.Request)
-	record.Changes = record.ToChanges(skma, record.Request)
-	record.Prepare = record.ToPrepare(skma, record.Objects)
-	record.Changed = record.ToFlatten(skma, record.Objects)
 	return nil
 }
 
@@ -201,10 +198,19 @@ func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 	offset := int((request.Page - 1) * request.Size)
 	values, count := []map[string]any{}, int64(0)
 	query := self.client.Table(skma.Model.Search).Clauses(queries...)
+	if request.Order != nil && request.Order.Field != "" && skma.GetField(request.Order.Field) != nil {
+		expr := fieldSQLExpr(request.Order.Field)
+		dir := "ASC"
+		if strings.EqualFold(request.Order.Order, "desc") {
+			dir = "DESC"
+		}
+		query = query.Order(fmt.Sprintf("%s %s", expr, dir))
+	}
 	query.Count(&count).Limit(int(request.Size)).Offset(offset).Find(&values)
 	record := respond.Record{}
 	values = slice.Map(values, func(idx int, item map[string]any) map[string]any {
-		return record.Decode(skma, item)
+		decoded := record.Decode(skma, item)
+		return record.ToFlatten(skma, decoded)
 	})
 	result := &respond.Result{
 		Page: request.Page, Count: uint64(count),
@@ -218,36 +224,37 @@ func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 	return result, nil
 }
 
-func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
-	return self.Search(skma.Table)
-}
 
 func (self *Engine) buildQuery(logic string, queries *[]schema.Query) []clause.Expression {
 	result := []clause.Expression{}
 	for _, query := range *queries {
-		if strings.HasPrefix(query.Field, "basic.") {
-			query.Field = strings.Replace(query.Field, "basic.", "", 1)
-		}
+		col := fieldSQLExpr(query.Field)
 		switch strings.ToUpper(query.Logic) {
 		case consts.LOGIC_EQUALSTO:
-			result = append(result, clause.Eq{Column: query.Field, Value: query.Value})
+			result = append(result, eqClause(col, query.Value))
+		case consts.LOGIC_NOTEQUAL:
+			result = append(result, neClause(col, query.Value))
+		case consts.LOGIC_VAL_NULL:
+			result = append(result, nilClause(col))
+		case consts.LOGIC_NOT_NULL:
+			result = append(result, nnlClause(col))
 		case consts.LOGIC_STR_LIKE:
-			result = append(result, clause.Like{Column: query.Field, Value: query.Value})
+			result = append(result, likeClause(col, query.Value))
 		case consts.LOGIC_INCLUDES:
-			result = append(result, clause.IN{Column: query.Field, Values: query.Value.([]any)})
+			result = append(result, inClause(col, query.Value.([]any)))
 		case consts.LOGIC_CONTAINS:
-			subsql := fmt.Sprintf(`instr(',' || "%s" || ',', ',' || ? || ',') > 0`, query.Field)
+			subsql := fmt.Sprintf(`instr(',' || %s || ',', ',' || ? || ',') > 0`, quoteCol(col))
 			result = append(result, clause.Expr{SQL: subsql, Vars: []any{query.Value}})
 		case consts.LOGIC_LESTHAN:
-			result = append(result, clause.Lt{Column: query.Field, Value: query.Value})
+			result = append(result, cmpClause(col, "<", query.Value))
 		case consts.LOGIC_GREATER:
-			result = append(result, clause.Gt{Column: query.Field, Value: query.Value})
+			result = append(result, cmpClause(col, ">", query.Value))
 		case consts.LOGIC_LESS_EQ:
-			result = append(result, clause.Lte{Column: query.Field, Value: query.Value})
+			result = append(result, cmpClause(col, "<=", query.Value))
 		case consts.LOGIC_GRAT_EQ:
-			result = append(result, clause.Gte{Column: query.Field, Value: query.Value})
+			result = append(result, cmpClause(col, ">=", query.Value))
 		case consts.LOGIC_BETWEEN:
-			subsql := fmt.Sprintf(`"%s" between ? and ?`, query.Field)
+			subsql := fmt.Sprintf(`%s between ? and ?`, quoteCol(col))
 			result = append(result, clause.Expr{SQL: subsql, Vars: query.Value.([]any)})
 		case consts.LOGIC_SUBRAW:
 			result = append(result, clause.Expr{SQL: query.Value.(string), Vars: []any{}})

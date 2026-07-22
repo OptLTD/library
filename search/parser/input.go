@@ -143,9 +143,16 @@ func (self *InputParser) BuildFields(input *source.Input) []source.Field {
 			continue
 		}
 		field.Shown = flag == consts.VISIBLE_SHOW
+		if idx := fieldOrderInList(input.Fields, field.UUKey); idx >= 0 {
+			field.SeqNo = uint16(idx)
+		}
 		result = append(result, field)
 	}
-	slice.SortByField(result, "SeqNo", "asc")
+	if input != nil && len(input.Fields) > 0 {
+		slice.SortByField(result, "SeqNo", "asc")
+	} else {
+		sortFieldsByGroupThenSeq(result, groups)
+	}
 	return result
 }
 
