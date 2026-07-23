@@ -122,26 +122,8 @@ jobs:
       - name: Sync workspace
         run: go work sync
 
-      - name: Prepare publishable go.mod
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          set -euo pipefail
-          ver="${VERSION#v}"
-          (cd jsrunner && \
-            go mod edit -dropreplace=github.com/OptLTD/library/jsmodule && \
-            go mod edit -require=github.com/OptLTD/library/jsmodule@"v${ver}")
-          (cd jsmodule && \
-            go mod edit -dropreplace=github.com/OptLTD/library/jsrunner && \
-            go mod edit -require=github.com/OptLTD/library/jsrunner@"v${ver}")
-          for driver in engine/memory engine/mysql engine/mongo engine/postgres engine/sqlite engine/elastic engine/redis; do
-            (cd "$driver" && \
-              go mod edit -dropreplace=github.com/OptLTD/library/search && \
-              go mod edit -require=github.com/OptLTD/library/search@"v${ver}")
-          done
-          go work sync
-
       - name: Validate modules
+        id: validate
         env:
           VERSION: ${{ steps.meta.outputs.version }}
           MODULES: ${{ github.event_name == 'workflow_dispatch' && inputs.modules || 'search,engine/memory,engine/mysql,engine/mongo,engine/postgres,engine/sqlite,engine/elastic,engine/redis,formula,jsrunner,jsmodule' }}
@@ -164,29 +146,73 @@ jobs:
               echo "$mod/go.mod: expected module path $expected" >&2
               exit 1
             fi
+          done
+
+          todo=()
+          existing=0
+          for mod in "${mods[@]}"; do
+            tag="${mod}/${VERSION}"
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "already released: $tag"
+              existing=$((existing + 1))
+            else
+              echo "will release $tag"
+              todo+=("$mod")
+            fi
+          done
+
+          if [[ ${#todo[@]} -eq 0 ]]; then
+            echo "All selected modules already tagged at ${VERSION}; nothing to do."
+            echo "already_released=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "${mods[@]}" > /tmp/release-modules.txt
+            exit 0
+          fi
+
+          if [[ "$existing" -gt 0 ]]; then
+            echo "partial release detected for ${VERSION}: ${existing} tag(s) exist, ${#todo[@]} missing" >&2
+            echo "Refuse to continue. Delete stray tags or release the remaining modules explicitly." >&2
+            exit 1
+          fi
+
+          echo "already_released=false" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${todo[@]}" > /tmp/release-modules.txt
+
+      - name: Prepare publishable go.mod
+        if: steps.validate.outputs.already_released != 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          ver="${VERSION#v}"
+          (cd jsrunner && \
+            go mod edit -dropreplace=github.com/OptLTD/library/jsmodule && \
+            go mod edit -require=github.com/OptLTD/library/jsmodule@"v${ver}")
+          (cd jsmodule && \
+            go mod edit -dropreplace=github.com/OptLTD/library/jsrunner && \
+            go mod edit -require=github.com/OptLTD/library/jsrunner@"v${ver}")
+          for driver in engine/memory engine/mysql engine/mongo engine/postgres engine/sqlite engine/elastic engine/redis; do
+            (cd "$driver" && \
+              go mod edit -dropreplace=github.com/OptLTD/library/search && \
+              go mod edit -require=github.com/OptLTD/library/search@"v${ver}")
+          done
+          go work sync
+
+          while IFS= read -r mod; do
+            [[ -z "$mod" ]] && continue
             if grep -qE '^replace ' "$mod/go.mod"; then
               echo "$mod/go.mod: replace directives must be removed before publishing" >&2
               exit 1
             fi
-          done
-
-          for mod in "${mods[@]}"; do
-            tag="${mod}/${VERSION}"
-            if git rev-parse "$tag" >/dev/null 2>&1; then
-              echo "tag already exists: $tag" >&2
-              exit 1
-            fi
-            echo "will release $tag"
-          done
-
-          printf '%s\n' "${mods[@]}" > /tmp/release-modules.txt
+          done < /tmp/release-modules.txt
 
       - name: Configure git
+        if: steps.validate.outputs.already_released != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Create and push tags
+        if: steps.validate.outputs.already_released != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
@@ -199,6 +225,7 @@ jobs:
             git commit -m "chore(release): prepare go.mod for ${VERSION}"
           fi
           while IFS= read -r mod; do
+            [[ -z "$mod" ]] && continue
             tag="${mod}/${VERSION}"
             git tag -a "$tag" -m "Release ${MODULE_PREFIX}/${mod} ${VERSION}"
             git push origin "$tag"
@@ -211,10 +238,15 @@ jobs:
           {
             echo "## Release ${VERSION}"
             echo
+            if [[ "${{ steps.validate.outputs.already_released }}" == "true" ]]; then
+              echo "Already released — module tags already exist. No new tags created."
+              echo
+            fi
             echo "Go modules are available via:"
             echo
             echo '```bash'
             while IFS= read -r mod; do
+              [[ -z "$mod" ]] && continue
               echo "go get ${MODULE_PREFIX}/${mod}@${VERSION}"
             done < /tmp/release-modules.txt
             echo '```'
