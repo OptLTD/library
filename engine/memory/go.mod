@@ -3,7 +3,7 @@ module github.com/OptLTD/library/engine/memory
 go 1.25.0
 
 require (
-	github.com/OptLTD/library/search v0.0.0
+	github.com/OptLTD/library/search v1.2.0
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/stretchr/testify v1.11.1
 )
@@ -21,5 +21,3 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/OptLTD/library/search => ../../search

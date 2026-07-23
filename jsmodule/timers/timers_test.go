@@ -12,7 +12,7 @@ import (
 )
 
 func TestTimers(t *testing.T) {
-	t.Parallel()
+	// Shared VM across subtests; keep serial to avoid timer/event-loop races under CI load.
 	vm := modulestest.New(t)
 	ctx := context.Background()
 

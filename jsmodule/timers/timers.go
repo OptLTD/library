@@ -94,8 +94,12 @@ func (*Timers) setInterval(call sobek.FunctionCall, rt *sobek.Runtime) sobek.Val
 		for {
 			select {
 			case <-t.timer:
+				// Claim the next slot before releasing the current one so the
+				// event loop never observes enqueue==0 between ticks (CI flake:
+				// loop exits while the Promise is still pending).
+				next := js.EnqueueJob(rt)
 				enqueue(task)
-				enqueue = js.EnqueueJob(rt)
+				enqueue = next
 			case <-t.done:
 				enqueue(nothing)
 				return

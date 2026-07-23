@@ -3,7 +3,7 @@ module github.com/OptLTD/library/engine/mysql
 go 1.25.0
 
 require (
-	github.com/OptLTD/library/search v0.0.0
+	github.com/OptLTD/library/search v1.2.0
 	github.com/duke-git/lancet/v2 v2.3.7
 	gorm.io/gorm v1.25.11
 )
@@ -19,5 +19,3 @@ require (
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/text v0.34.0 // indirect
 )
-
-replace github.com/OptLTD/library/search => ../../search

@@ -6,9 +6,9 @@ require (
 	github.com/OptLTD/library/engine/memory v0.0.0
 	github.com/OptLTD/library/engine/mysql v0.0.0
 	github.com/OptLTD/library/formula v0.0.0
-	github.com/OptLTD/library/jsmodule v1.0.0
-	github.com/OptLTD/library/jsrunner v1.0.0
-	github.com/OptLTD/library/search v0.0.0
+	github.com/OptLTD/library/jsmodule v1.2.0
+	github.com/OptLTD/library/jsrunner v1.2.0
+	github.com/OptLTD/library/search v1.2.0
 )
 
 require (
