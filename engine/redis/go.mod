@@ -3,7 +3,7 @@ module github.com/OptLTD/library/engine/redis
 go 1.25.0
 
 require (
-	github.com/OptLTD/library/search v1.2.0
+	github.com/OptLTD/library/search v1.2.1
 	github.com/alovn/go-bloomfilter v1.1.0
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/redis/go-redis/v9 v9.16.0
