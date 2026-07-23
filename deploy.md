@@ -44,14 +44,19 @@ Tag 格式为 `<module>/<version>`，例如 `search/v0.2.0`、`engine/mysql/v0.2
 - `jsrunner/v0.2.0`
 - `jsmodule/v0.2.0`
 
-### 方式二：推送 release tag 触发
+### 方式二：推送 release tag 触发（可选）
 
 ```bash
 git tag release/v0.1.0
 git push origin release/v0.1.0
 ```
 
-推送 `release/v0.1.0` 后，workflow 会自动为全部 module 打对应版本 tag。
+推送 `release/v0.1.0` 后，workflow 会自动为全部 module 打对应版本 tag。  
+`release/*` 只是发版触发器用，**不是** Go module 版本；发版成功后可删掉以免 tags 页噪音：
+
+```bash
+git push origin :refs/tags/release/v0.1.0
+```
 
 ## 引用方式
 
