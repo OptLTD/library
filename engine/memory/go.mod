@@ -3,7 +3,7 @@ module github.com/OptLTD/library/engine/memory
 go 1.25.0
 
 require (
-	github.com/OptLTD/library/search v1.2.2
+	github.com/OptLTD/library/search v1.2.5
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/stretchr/testify v1.11.1
 )

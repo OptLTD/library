@@ -1,5 +1,5 @@
-github.com/OptLTD/library/jsrunner v1.2.0 h1:FuxphanvooHVnXR27qZhedVNMKWBVPdThBg+lVNyPM0=
-github.com/OptLTD/library/jsrunner v1.2.0/go.mod h1:ZprvWwnla2MM25N6462zW5CYCCJyYBd+RL/h6tKe000=
+github.com/OptLTD/library/jsrunner v1.2.2 h1:JSZz/BN9BzHxfDs7FLeXH2Wj6yuLU6K0XjdPMo3VXEs=
+github.com/OptLTD/library/jsrunner v1.2.2/go.mod h1:hZ7mBRNBv02M3LOpr4WriL6GSWSp4GAOEDp3MSVPe3I=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

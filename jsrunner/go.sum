@@ -1,5 +1,5 @@
-github.com/OptLTD/library/jsmodule v1.2.0 h1:T4sYlmGXfI8U5um2AGvvziC347Hz5brqFH6ZRjY1Hhg=
-github.com/OptLTD/library/jsmodule v1.2.0/go.mod h1:6zTO/iEpz71bgN7ExLn0u/TVIDXbTtQo2/b1wP2K+JU=
+github.com/OptLTD/library/jsmodule v1.2.2 h1:6phC5tQDXKAjpSDhiV/5BLMCuHrT0W1LHUHWDSP2688=
+github.com/OptLTD/library/jsmodule v1.2.2/go.mod h1:LYVFsqNTTQ74kSIzWe487kzBns5HokChpwIVPHhtQU4=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
