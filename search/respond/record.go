@@ -69,18 +69,25 @@ func (self *Record) Decode(skma schema.ISchema, data object) object {
 			if !ok || value == nil {
 				continue
 			}
-			switch gtype {
-			case consts.GTYPE_GROUPED:
-				object := object{}
-				if jsoniter.UnmarshalFromString(value.(string), &object) == nil {
-					result[group.UUKey] = object
-				}
-			default:
+		switch gtype {
+		case consts.GTYPE_GROUPED:
+			if group.Extra.Multiple {
 				array := []any{}
 				if jsoniter.UnmarshalFromString(value.(string), &array) == nil {
 					result[group.UUKey] = array
 				}
+			} else {
+				object := object{}
+				if jsoniter.UnmarshalFromString(value.(string), &object) == nil {
+					result[group.UUKey] = object
+				}
 			}
+		default:
+			array := []any{}
+			if jsoniter.UnmarshalFromString(value.(string), &array) == nil {
+				result[group.UUKey] = array
+			}
+		}
 			continue
 		}
 		object := object{}
@@ -208,7 +215,11 @@ func (self *Record) FillNilData(skma schema.ISchema, request object) object {
 		}
 		gtype := strings.ToUpper(group.GType)
 		if gtype == consts.GTYPE_GROUPED && group.Extra.Multiple {
-			request[field.Group] = nil
+			// 仅在整组缺失时补 nil；已带数组（如新建单据的 waybill/payment 明细）
+			// 不能被清空，否则 Encode 会把 nil 序列化成字面量 "null" 落库。
+			if _, ok := request[field.Group]; !ok {
+				request[field.Group] = nil
+			}
 			continue
 		}
 		key := field.GetKey()
