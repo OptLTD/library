@@ -19,7 +19,7 @@ on:
         type: boolean
   push:
     tags:
-      - release/v*  # ← 只保留这一个
+      - release/v*
 
 permissions:
   contents: write
@@ -194,28 +194,18 @@ jobs:
             fi
           done < /tmp/release-modules.txt
 
-      - name: Configure git
-        if: steps.validate.outputs.already_released != 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      # 注意：这里去掉了 Configure git 步骤，因为不再需要 commit
 
-      - name: Create and push tags
+      - name: Create and push tags (without committing go.mod changes)
         if: steps.validate.outputs.already_released != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          git add jsrunner/go.mod jsmodule/go.sum jsrunner/go.sum jsmodule/go.mod \
-            engine/memory/go.mod engine/mysql/go.mod engine/mongo/go.mod \
-            engine/postgres/go.mod engine/sqlite/go.mod \
-            engine/elastic/go.mod engine/redis/go.mod 2>/dev/null || true
-          if ! git diff --staged --quiet; then
-            git commit -m "chore(release): prepare go.mod for ${VERSION}"
-          fi
           while IFS= read -r mod; do
             [[ -z "$mod" ]] && continue
             tag="${mod}/${VERSION}"
+            echo "Creating and pushing tag: $tag"
             git tag -a "$tag" -m "Release ${MODULE_PREFIX}/${mod} ${VERSION}"
             git push origin "$tag"
           done < /tmp/release-modules.txt
