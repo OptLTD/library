@@ -79,7 +79,14 @@ jobs:
 
   release:
     needs: test
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/release/')
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/search/') ||
+      startsWith(github.ref, 'refs/tags/engine/') ||
+      startsWith(github.ref, 'refs/tags/formula/') ||
+      startsWith(github.ref, 'refs/tags/jsrunner/') ||
+      startsWith(github.ref, 'refs/tags/jsmodule/') ||
+      startsWith(github.ref, 'refs/tags/release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -109,6 +116,10 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
             version="${GITHUB_REF_NAME#release/}"
+            # 如果 tag 是 search/v1.2.3 格式，需要提取版本号
+            if [[ "$version" == */* ]]; then
+              version="${version#*/}"
+            fi
           else
             version="${{ inputs.version }}"
           fi
