@@ -14,6 +14,7 @@ func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	if skma == nil || skma.Table == nil {
 		return &respond.Result{}, nil
 	}
+	skma.Table = self.resetTable(skma.Table)
 	table := skma.Table
 	req := table.Request
 	groups := skma.GroupBy
@@ -23,6 +24,7 @@ func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	}
 
 	merged := table.BuildQuery()
+	bindQueryIndexes(table, &merged)
 	queries := self.buildQuery(consts.LOGIC_SUBAND, &merged)
 
 	selectParts := []string{}
@@ -30,7 +32,7 @@ func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	aliasToIndex := map[string]string{}
 
 	for _, g := range groups {
-		expr := fieldSQLExpr(g.Index)
+		expr := fieldExpr(table, g.Index)
 		alias := fieldAlias(g.Index)
 		selectParts = append(selectParts, fmt.Sprintf("%s AS %s", expr, alias))
 		groupCols = append(groupCols, expr)
@@ -39,7 +41,7 @@ func (self *Engine) Digest(skma *schema.Digest) (*respond.Result, error) {
 	for _, a := range aggrs {
 		expr := "*"
 		if a.Index != "" {
-			expr = fieldSQLExpr(a.Index)
+			expr = fieldExpr(table, a.Index)
 		}
 		alias := a.Label
 		if alias == "" {

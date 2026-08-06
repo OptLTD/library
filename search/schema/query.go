@@ -24,11 +24,13 @@ var NULL_LOGIC = []string{
 }
 
 type Query struct {
-	Logic string   `json:"logic"`           // 逻辑类型
-	Field string   `json:"field"`           // 字段名称
-	DType string   `json:"dtype"`           // 数据类型
-	Value any      `json:"value"`           // 数据值
-	Items *[]Query `json:"items,omitempty"` // 子查询
+	Logic string `json:"logic"` // 逻辑类型
+	Field string `json:"field"` // 逻辑字段（通常 UUKey）
+	DType string `json:"dtype"` // 数据类型
+	Value any    `json:"value"` // 数据值
+
+	Index string   `json:"index,omitempty"` // 搜索/存储路径（引擎绑定后的物理列或表达式）
+	Items *[]Query `json:"items,omitempty"` // 子查询,如 ITEMS:OR,ITEMS:AND,ITEMS:NOT
 }
 
 func BuildQuery(payload map[string]any) ([]Query, error) {

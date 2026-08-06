@@ -192,14 +192,16 @@ func (self *Engine) Update(skma *schema.Input, data map[string]any) error {
 }
 
 func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
+	skma = self.resetTable(skma)
 	request := skma.Request
 	merged := skma.BuildQuery()
+	bindQueryIndexes(skma, &merged)
 	queries := self.buildQuery(consts.LOGIC_SUBAND, &merged)
 	offset := int((request.Page - 1) * request.Size)
 	values, count := []map[string]any{}, int64(0)
 	query := self.client.Table(skma.Model.Search).Clauses(queries...)
 	if request.Order != nil && request.Order.Field != "" && skma.GetField(request.Order.Field) != nil {
-		expr := fieldSQLExpr(request.Order.Field)
+		expr := fieldExpr(skma, request.Order.Field)
 		dir := "ASC"
 		if strings.EqualFold(request.Order.Order, "desc") {
 			dir = "DESC"
@@ -228,7 +230,7 @@ func (self *Engine) Search(skma *schema.Table) (*respond.Result, error) {
 func (self *Engine) buildQuery(logic string, queries *[]schema.Query) []clause.Expression {
 	result := []clause.Expression{}
 	for _, query := range *queries {
-		col := fieldSQLExpr(query.Field)
+		col := querySQLExpr(query)
 		switch strings.ToUpper(query.Logic) {
 		case consts.LOGIC_EQUALSTO:
 			result = append(result, eqClause(col, query.Value))

@@ -10,14 +10,17 @@ import (
 
 // Sample returns per-field distinct values under the table's query (data sampling
 // for Excel-style filters). limit caps values per field (default 100, max 500).
+// Unknown / unresolvable fields yield an empty list (do not fail the whole request).
 func (self *Engine) Sample(table *schema.Table, fields []string, limit int) (map[string][]string, error) {
 	if table == nil || len(fields) == 0 {
 		return map[string][]string{}, nil
 	}
+	table = self.resetTable(table)
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
 	merged := table.BuildQuery()
+	bindQueryIndexes(table, &merged)
 	queries := self.buildQuery(consts.LOGIC_SUBAND, &merged)
 	out := make(map[string][]string, len(fields))
 	for _, f := range fields {
@@ -25,14 +28,24 @@ func (self *Engine) Sample(table *schema.Table, fields []string, limit int) (map
 		if f == "" {
 			continue
 		}
-		expr := fieldSQLExpr(f)
+		if table.GetField(f) == nil {
+			out[f] = []string{}
+			continue
+		}
+		expr := fieldExpr(table, f)
+		if expr == "" || !sampleExprAllowed(expr) {
+			out[f] = []string{}
+			continue
+		}
 		rows := []map[string]any{}
 		db := self.client.Table(table.Model.Search).Clauses(queries...)
 		sel := fmt.Sprintf("CAST(%s AS TEXT) AS v", expr)
 		where := fmt.Sprintf("%s IS NOT NULL AND TRIM(CAST(%s AS TEXT)) != ''", expr, expr)
 		groupExpr := fmt.Sprintf("CAST(%s AS TEXT)", expr)
 		if err := db.Select(sel).Where(where).Group(groupExpr).Order(groupExpr).Limit(limit).Find(&rows).Error; err != nil {
-			return nil, fmt.Errorf("sample %s: %w", f, err)
+			// Soft-fail: stale filter keys / schema drift must not break the panel.
+			out[f] = []string{}
+			continue
 		}
 		vals := make([]string, 0, len(rows))
 		seen := map[string]struct{}{}
@@ -50,4 +63,15 @@ func (self *Engine) Sample(table *schema.Table, fields []string, limit int) (map
 		out[f] = vals
 	}
 	return out, nil
+}
+
+func sampleExprAllowed(expr string) bool {
+	if expr == "" {
+		return false
+	}
+	// Reject obviously unsafe fragments; expressions are built only from schema Index.
+	if strings.ContainsAny(expr, ";\n\r") {
+		return false
+	}
+	return true
 }
